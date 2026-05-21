@@ -6,6 +6,9 @@ members = [
     "crates/polyfont-scope",
     "crates/polyfont-cli",
     "crates/polyfont-lsp",
+    "crates/polyfont-parse",
+    "crates/polyfont-fonts",
+    "crates/polyfont-themes",
 ]
 
 [workspace.package]

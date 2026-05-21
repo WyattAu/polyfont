@@ -1,0 +1,66 @@
+[package]
+name = "polyfont-parse"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+keywords = ["font", "syntax-highlighting", "textmate", "tree-sitter"]
+categories = ["text-editors", "development-tools"]
+description = "Tree-sitter-based token parsing for polyfont"
+
+[dependencies]
+polyfont-core = { path = "../polyfont-core" }
+tree-sitter = "0.24"
+tree-sitter-highlight = "0.24"
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[features]
+default = []
+rust = ["dep:tree-sitter-rust"]
+typescript = ["dep:tree-sitter-typescript"]
+javascript = ["dep:tree-sitter-typescript"]
+python = ["dep:tree-sitter-python"]
+go = ["dep:tree-sitter-go"]
+c = ["dep:tree-sitter-c"]
+cpp = ["dep:tree-sitter-cpp"]
+json = ["dep:tree-sitter-json"]
+toml = ["dep:tree-sitter-toml"]
+lua = ["dep:tree-sitter-lua"]
+
+[dependencies.tree-sitter-rust]
+version = "0.23"
+optional = true
+
+[dependencies.tree-sitter-typescript]
+version = "0.23"
+optional = true
+
+[dependencies.tree-sitter-python]
+version = "0.23"
+optional = true
+
+[dependencies.tree-sitter-go]
+version = "0.23"
+optional = true
+
+[dependencies.tree-sitter-c]
+version = "0.23"
+optional = true
+
+[dependencies.tree-sitter-cpp]
+version = "0.23"
+optional = true
+
+[dependencies.tree-sitter-json]
+version = "0.24"
+optional = true
+
+[dependencies.tree-sitter-toml]
+version = "0.20"
+optional = true
+
+[dependencies.tree-sitter-lua]
+version = "0.5"
+optional = true
