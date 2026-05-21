@@ -12,3 +12,10 @@ categories = ["text-editors", "development-tools"]
 [dependencies]
 serde = { workspace = true }
 thiserror = { workspace = true }
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "scope_matching"
+harness = false

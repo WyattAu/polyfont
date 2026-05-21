@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use polyfont_core::{FontAssignment, FontRule};
 
@@ -369,6 +369,104 @@ fn count_terminals(node: &ScopeTreeNode) -> usize {
     count
 }
 
+pub struct TrieScopeResolver {
+    root: TrieNode,
+    rule_count: usize,
+}
+
+#[derive(Default)]
+struct TrieNode {
+    children: HashMap<String, TrieNode>,
+    rule: Option<(FontRule, usize)>,
+}
+
+impl TrieScopeResolver {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            root: TrieNode::default(),
+            rule_count: 0,
+        }
+    }
+
+    #[must_use]
+    pub fn from_rules(rules: Vec<FontRule>) -> Self {
+        let mut resolver = Self::new();
+        for rule in rules {
+            resolver.add_rule(rule);
+        }
+        resolver
+    }
+
+    pub fn add_rule(&mut self, rule: FontRule) {
+        let index = self.rule_count;
+        let mut node = &mut self.root;
+        for segment in rule.scope.split('.') {
+            node = node.children.entry(segment.to_owned()).or_default();
+        }
+        node.rule = Some((rule, index));
+        self.rule_count += 1;
+    }
+
+    #[must_use]
+    pub fn resolve(&self, scope: &str) -> Option<ResolvedScope> {
+        let mut node = &self.root;
+        let mut best: Option<(&FontRule, usize, usize)> = None;
+
+        for segment in scope.split('.') {
+            let next = node
+                .children
+                .get(segment)
+                .or_else(|| node.children.get("*"));
+
+            let Some(next) = next else {
+                break;
+            };
+
+            node = next;
+            if let Some((rule, rule_index)) = &node.rule {
+                let specificity = rule.specificity();
+                let should_replace = match &best {
+                    None => true,
+                    Some((_, _, best_spec)) => {
+                        specificity > *best_spec
+                            || (specificity == *best_spec
+                                && *rule_index < best.expect("checked above").1)
+                    }
+                };
+                if should_replace {
+                    best = Some((rule, *rule_index, specificity));
+                }
+            }
+        }
+
+        best.map(|(rule, rule_index, specificity)| ResolvedScope {
+            assignment: FontAssignment {
+                scope: scope.to_owned(),
+                font: rule.font.clone(),
+                specificity,
+                is_active: true,
+            },
+            rule_index,
+        })
+    }
+
+    pub fn resolve_all(&self, scopes: &[&str]) -> Vec<Option<ResolvedScope>> {
+        scopes.iter().map(|s| self.resolve(s)).collect()
+    }
+
+    #[must_use]
+    pub const fn rule_count(&self) -> usize {
+        self.rule_count
+    }
+}
+
+impl Default for TrieScopeResolver {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum ScopeError {
     #[error("empty scope pattern")]
@@ -553,5 +651,95 @@ mod tests {
     fn test_matches_any() {
         assert!(ScopeMatcher::matches_any("keyword.control", &["comment", "keyword"],).unwrap());
         assert!(!ScopeMatcher::matches_any("string.quoted", &["comment", "keyword"],).unwrap());
+    }
+
+    #[test]
+    fn test_trie_insert_and_resolve() {
+        let mut resolver = TrieScopeResolver::new();
+        resolver.add_rule(FontRule {
+            scope: "keyword".to_owned(),
+            font: FontSpec::default_font("mono"),
+        });
+        let result = resolver.resolve("keyword").unwrap();
+        assert_eq!(result.assignment.font.family, "mono");
+    }
+
+    #[test]
+    fn test_trie_specificity() {
+        let mut resolver = TrieScopeResolver::new();
+        resolver.add_rule(FontRule {
+            scope: "entity".to_owned(),
+            font: FontSpec::default_font("font-a"),
+        });
+        resolver.add_rule(FontRule {
+            scope: "entity.name.function".to_owned(),
+            font: FontSpec::default_font("font-b"),
+        });
+        let result = resolver.resolve("entity.name.function").unwrap();
+        assert_eq!(result.assignment.font.family, "font-b");
+    }
+
+    #[test]
+    fn test_trie_partial_match() {
+        let mut resolver = TrieScopeResolver::new();
+        resolver.add_rule(FontRule {
+            scope: "entity.name".to_owned(),
+            font: FontSpec::default_font("font-a"),
+        });
+        let result = resolver.resolve("entity.name.function").unwrap();
+        assert_eq!(result.assignment.font.family, "font-a");
+    }
+
+    #[test]
+    fn test_trie_empty() {
+        let resolver = TrieScopeResolver::new();
+        assert!(resolver.resolve("anything").is_none());
+    }
+
+    #[test]
+    fn test_trie_wildcard() {
+        let mut resolver = TrieScopeResolver::new();
+        resolver.add_rule(FontRule {
+            scope: "entity.*".to_owned(),
+            font: FontSpec::default_font("wildcard-font"),
+        });
+        let result = resolver.resolve("entity.name").unwrap();
+        assert_eq!(result.assignment.font.family, "wildcard-font");
+    }
+
+    #[test]
+    fn test_trie_from_rules() {
+        let rules = vec![
+            FontRule {
+                scope: "keyword".to_owned(),
+                font: FontSpec::default_font("mono"),
+            },
+            FontRule {
+                scope: "string".to_owned(),
+                font: FontSpec::default_font("serif"),
+            },
+        ];
+        let resolver = TrieScopeResolver::from_rules(rules);
+        let result = resolver.resolve("keyword").unwrap();
+        assert_eq!(result.assignment.font.family, "mono");
+    }
+
+    #[test]
+    fn test_trie_resolve_all() {
+        let rules = vec![
+            FontRule {
+                scope: "keyword".to_owned(),
+                font: FontSpec::default_font("mono"),
+            },
+            FontRule {
+                scope: "string".to_owned(),
+                font: FontSpec::default_font("serif"),
+            },
+        ];
+        let resolver = TrieScopeResolver::from_rules(rules);
+        let results = resolver.resolve_all(&["keyword", "string", "comment"]);
+        assert!(results[0].is_some());
+        assert!(results[1].is_some());
+        assert!(results[2].is_none());
     }
 }
