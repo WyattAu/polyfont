@@ -32,6 +32,9 @@ function M.setup(opts)
   highlights.apply(cfg)
   M._apply_all_buffers()
 
+  local rule_count = cfg.rules and #cfg.rules or 0
+  vim.notify(string.format("[polyfont] loaded %d font rule(s)", rule_count), vim.log.levels.INFO)
+
   if M.options.watch_config and M.config_path then
     M.watch(M.config_path)
   end
@@ -155,6 +158,20 @@ function M.status()
     table.insert(lines, string.format("  %s -> %s (%s, %s)", rule.scope, rule.font.family, rule.font.weight, rule.font.style))
   end
   return table.concat(lines, "\n")
+end
+
+function M.metadata()
+  local meta = highlights.font_metadata_table()
+  local lines = {}
+  for key, val in pairs(meta) do
+    local scope = val.scope or key
+    table.insert(lines, string.format("  %s: %s (%s, %s)", scope, val.family, val.weight, val.style))
+  end
+  return table.concat(lines, "\n")
+end
+
+function M.get_font(scope)
+  return highlights.get_font_for_scope(scope)
 end
 
 return M

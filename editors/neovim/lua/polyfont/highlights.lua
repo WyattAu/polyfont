@@ -38,6 +38,8 @@ local function build_highlight_groups(config)
       scope = rule.scope,
     }
   end
+
+  M.build_font_metadata(config)
 end
 
 local function clear_highlight_groups()
@@ -178,8 +180,70 @@ function M.clear_buffer(bufnr)
   end
 end
 
+function M.font_metadata_table()
+  return vim.g.polyfont_font_metadata or {}
+end
+
+function M.build_font_metadata(config)
+  local metadata = {}
+
+  if config.default then
+    metadata.default = {
+      family = config.default.family,
+      weight = config.default.weight,
+      style = config.default.style,
+      fallbacks = config.default.fallbacks or {},
+    }
+  end
+
+  for _, rule in ipairs(config.rules) do
+    local key = rule.scope:gsub("[%.%-]", "_")
+    metadata[key] = {
+      scope = rule.scope,
+      family = rule.font.family,
+      weight = rule.font.weight,
+      style = rule.font.style,
+      fallbacks = rule.font.fallbacks or {},
+    }
+  end
+
+  vim.g.polyfont_font_metadata = metadata
+end
+
+function M.get_font_for_scope(scope)
+  local metadata = M.font_metadata_table()
+  if not metadata or not M._rules then
+    return nil
+  end
+
+  local rule = ts.resolve_scope(scope, M._rules)
+  if not rule then
+    local parts = vim.split(scope, "%.", { plain = true })
+    for i = #parts - 1, 1, -1 do
+      local parent = table.concat(vim.list_slice(parts, 1, i), ".")
+      local parent_rule = ts.resolve_scope(parent, M._rules)
+      if parent_rule then
+        rule = parent_rule
+        break
+      end
+    end
+  end
+
+  if not rule then
+    return metadata.default or nil
+  end
+
+  local key = rule.scope:gsub("[%.%-]", "_")
+  return metadata[key] or metadata.default
+end
+
 function M.apply(config, bufnr)
   bufnr = bufnr or 0
+
+  M._rules = config.rules or {}
+  if config.default then
+    table.insert(M._rules, { scope = "*", font = config.default })
+  end
 
   build_highlight_groups(config)
 

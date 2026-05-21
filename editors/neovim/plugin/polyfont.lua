@@ -15,3 +15,8 @@ vim.api.nvim_create_user_command("PolyfontClear", function()
   require("polyfont.highlights").clear_all()
   vim.notify("[polyfont] cleared all highlights", vim.log.levels.INFO)
 end, { desc = "Clear all polyfont highlights" })
+
+vim.api.nvim_create_user_command("PolyfontMetadata", function()
+  local meta = require("polyfont").metadata()
+  vim.notify(meta, vim.log.levels.INFO)
+end, { desc = "Show current font metadata table" })
