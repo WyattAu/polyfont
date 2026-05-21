@@ -1,0 +1,50 @@
+{
+  "name": "polyfont",
+  "displayName": "Polyfont - Per-Token Font Highlighting",
+  "description": "Apply different fonts per syntax token for richer code visualization",
+  "version": "0.1.0",
+  "publisher": "polyfont",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.97.0"
+  },
+  "categories": [
+    "Other",
+    "Programming Languages",
+    "Themes"
+  ],
+  "keywords": [
+    "font",
+    "typography",
+    "syntax",
+    "highlighting",
+    "textmate"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "polyfont.applyFonts",
+        "title": "Polyfont: Apply Font Rules"
+      },
+      {
+        "command": "polyfont.generateConfig",
+        "title": "Polyfont: Generate Sample Config"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
+    "package": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.97.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.7.0"
+  }
+}

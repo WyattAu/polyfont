@@ -1,0 +1,18 @@
+[package]
+name = "polyfont-config"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Configuration file parsing for polyfont"
+repository.workspace = true
+readme = "README.md"
+keywords = ["font", "syntax-highlighting", "textmate", "editor"]
+categories = ["text-editors", "development-tools"]
+
+[dependencies]
+polyfont-core = { path = "../polyfont-core" }
+serde = { workspace = true }
+toml = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+walkdir = { workspace = true }

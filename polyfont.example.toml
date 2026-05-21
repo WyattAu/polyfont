@@ -1,0 +1,112 @@
+# Polyfont Configuration
+# Map syntax scopes to font families for per-token font highlighting
+# See: https://github.com/WyattAu/polyfont
+
+version = 1
+
+# Default font (applied when no rule matches)
+[default]
+family = "Fira Code"
+fallbacks = ["JetBrains Mono", "Cascadia Code", "monospace"]
+
+# Font rules: scope -> font mapping
+# Scopes use TextMate scope notation: https://macromates.com/manual/en/language_grammars
+# Most specific scope wins (e.g., "entity.name.function" beats "entity")
+
+[[rules]]
+scope = "keyword"
+[rules.font]
+family = "Maple Mono"
+weight = "bold"
+
+[[rules]]
+scope = "keyword.control"
+[rules.font]
+family = "Maple Mono"
+weight = "bold"
+
+[[rules]]
+scope = "comment"
+[rules.font]
+family = "IBM Plex Mono"
+style = "italic"
+
+[[rules]]
+scope = "string"
+[rules.font]
+family = "Source Code Pro"
+weight = "light"
+
+[[rules]]
+scope = "string.quoted"
+[rules.font]
+family = "Source Code Pro"
+weight = "light"
+
+[[rules]]
+scope = "entity.name.function"
+[rules.font]
+family = "Monaspace Argon"
+weight = "semi-bold"
+
+[[rules]]
+scope = "entity.name.type"
+[rules.font]
+family = "Monaspace Neon"
+weight = "semi-bold"
+
+[[rules]]
+scope = "variable"
+[rules.font]
+family = "JetBrains Mono"
+
+[[rules]]
+scope = "variable.parameter"
+[rules.font]
+family = "JetBrains Mono"
+style = "italic"
+
+[[rules]]
+scope = "constant"
+[rules.font]
+family = "Monaspace Radon"
+weight = "bold"
+
+[[rules]]
+scope = "constant.numeric"
+[rules.font]
+family = "Monaspace Radon"
+
+[[rules]]
+scope = "support.function"
+[rules.font]
+family = "Monaspace Krypton"
+
+[[rules]]
+scope = "storage.type"
+[rules.font]
+family = "Maple Mono"
+weight = "bold"
+style = "italic"
+
+[[rules]]
+scope = "punctuation"
+[rules.font]
+family = "Fira Code"
+
+[[rules]]
+scope = "operator"
+[rules.font]
+family = "Fira Code"
+
+[[rules]]
+scope = "meta.tag"
+[rules.font]
+family = "Monaspace Xenon"
+weight = "bold"
+
+[[rules]]
+scope = "attribute"
+[rules.font]
+family = "IBM Plex Mono"
+style = "italic"

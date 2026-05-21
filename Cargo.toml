@@ -1,0 +1,30 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/polyfont-core",
+    "crates/polyfont-config",
+    "crates/polyfont-scope",
+    "crates/polyfont-cli",
+    "crates/polyfont-lsp",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/WyattAu/polyfont"
+rust-version = "1.85"
+description = "Per-token font highlighting for code editors"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+thiserror = "2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+clap = { version = "4", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+tower-lsp = "0.20"
+walkdir = "2"

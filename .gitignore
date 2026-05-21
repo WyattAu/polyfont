@@ -1,36 +1,24 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Rust
+/target
+**/target/
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# Node.js
+**/node_modules/
+**/dist/
 
-# testing
-/coverage
+# VSCode extension packaging
+*.vsix
 
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
+# OS files
 .DS_Store
-*.pem
+Thumbs.db
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
 
-# local env files
-.env*.local
+# Environment
 .env
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+.env.local

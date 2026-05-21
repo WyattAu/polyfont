@@ -1,0 +1,14 @@
+[package]
+name = "polyfont-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Core types and traits for polyfont multi-font rendering"
+repository.workspace = true
+readme = "README.md"
+keywords = ["font", "syntax-highlighting", "textmate", "editor"]
+categories = ["text-editors", "development-tools"]
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
