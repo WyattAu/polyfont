@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Get started with Polyfont. Install from source, create a config file, and apply per-token fonts in VSCode and Neovim.">
+  <title>Getting Started - Polyfont</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <ul>
+      <li><a href="index.html" class="nav-brand">Polyfont</a></li>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="getting-started.html">Getting Started</a></li>
+      <li><a href="configuration.html">Configuration</a></li>
+      <li><a href="editors.html">Editor Integration</a></li>
+      <li><a href="api.html">API Reference</a></li>
+      <li><a href="https://github.com/WyattAu/polyfont">GitHub</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-layout">
+    <div class="sidebar">
+      <nav>
+        <h3>Documentation</h3>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="getting-started.html" class="active">Getting Started</a></li>
+          <li><a href="configuration.html">Configuration</a></li>
+          <li><a href="editors.html">Editor Integration</a></li>
+          <li><a href="api.html">API Reference</a></li>
+        </ul>
+        <h3>On This Page</h3>
+        <ul>
+          <li><a href="#prerequisites">Prerequisites</a></li>
+          <li><a href="#installation">Installation</a></li>
+          <li><a href="#first-config">Your First Config</a></li>
+          <li><a href="#vscode-setup">VSCode Setup</a></li>
+          <li><a href="#neovim-setup">Neovim Setup</a></li>
+          <li><a href="#cli-usage">CLI Tool</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <main class="content">
+      <h1>Getting Started</h1>
+
+      <section id="prerequisites">
+        <h2>Prerequisites</h2>
+        <table>
+          <thead>
+            <tr><th>Requirement</th><th>Minimum Version</th><th>Notes</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Rust toolchain</td><td>1.85+</td><td>Required for building from source. Edition 2024.</td></tr>
+            <tr><td>VSCode</td><td>1.97+</td><td>Required for native <code>fontFamily</code> in <code>textMateRules</code>.</td></tr>
+            <tr><td>Neovim</td><td>0.9+</td><td>Required for Tree-sitter and extmarks support.</td></tr>
+            <tr><td>Monospace fonts</td><td>--</td><td>Install the font families you plan to use (Fira Code, JetBrains Mono, etc.).</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="installation">
+        <h2>Installation</h2>
+        <p>Build from source using Cargo:</p>
+<pre><code># Clone the repository
+git clone https://github.com/WyattAu/polyfont.git
+cd polyfont
+
+# Build all crates (release mode)
+cargo build --workspace --release
+
+# The CLI binary will be at target/release/polyfont
+# Optionally copy it to your PATH
+cp target/release/polyfont /usr/local/bin/</code></pre>
+        <p>To build only the CLI:</p>
+<pre><code>cargo build --release -p polyfont-cli</code></pre>
+        <p>To build the LSP server:</p>
+<pre><code>cargo build --release -p polyfont-lsp</code></pre>
+      </section>
+
+      <section id="first-config">
+        <h2>Your First Config</h2>
+        <p>Create a <code>.polyfont.toml</code> file in your project root or home directory:</p>
+<pre><code>version = 1
+
+[default]
+family = "Fira Code"
+fallbacks = ["JetBrains Mono", "monospace"]
+
+[[rules]]
+scope = "keyword"
+[rules.font]
+family = "Maple Mono"
+weight = "bold"
+
+[[rules]]
+scope = "comment"
+[rules.font]
+family = "IBM Plex Mono"
+style = "italic"
+
+[[rules]]
+scope = "entity.name.function"
+[rules.font]
+family = "Monaspace Argon"
+weight = "semi-bold"
+
+[[rules]]
+scope = "string"
+[rules.font]
+family = "Source Code Pro"
+weight = "light"</code></pre>
+        <p>Alternatively, copy the full example config which includes all 17 rules:</p>
+<pre><code>cp polyfont.example.toml .polyfont.toml</code></pre>
+        <p>Validate your configuration:</p>
+<pre><code>polyfont check</code></pre>
+        <p>See the <a href="configuration.html">Configuration Reference</a> for the complete schema and all available options.</p>
+      </section>
+
+      <section id="vscode-setup">
+        <h2>VSCode Setup</h2>
+        <p>VSCode 1.97+ supports native <code>fontFamily</code> in <code>textMateRules</code>, which is the cleanest integration path.</p>
+
+        <h3>Option A: CLI-generated settings</h3>
+        <p>Generate VSCode settings from your <code>.polyfont.toml</code>:</p>
+<pre><code># Print to stdout
+polyfont vscode
+
+# Write to .vscode/settings.json
+polyfont vscode -o .vscode/settings.json</code></pre>
+        <p>The generated output is a JSON fragment that sets <code>editor.tokenColorCustomizations.textMateRules</code> with <code>fontFamily</code>, <code>fontWeight</code>, and <code>fontStyle</code> per scope.</p>
+
+        <h3>Option B: VSCode Extension</h3>
+        <p>Build and install the extension from source:</p>
+<pre><code>cd editors/vscode
+npm install
+npm run build
+# Install as development extension or package as .vsix</code></pre>
+      </section>
+
+      <section id="neovim-setup">
+        <h2>Neovim Setup</h2>
+        <p>Install the Polyfont Neovim plugin using your plugin manager:</p>
+
+        <h3>lazy.nvim</h3>
+<pre><code>-- lazy.nvim
+{
+  "WyattAu/polyfont",
+  dir = "/path/to/polyfont/editors/neovim",
+  config = function()
+    require("polyfont").setup()
+  end,
+}</code></pre>
+
+        <h3>CLI-generated config</h3>
+        <p>Generate Neovim highlight group configuration:</p>
+<pre><code>polyfont neovim</code></pre>
+        <p>This outputs Lua code that sets <code>vim.api.nvim_set_hl</code> for each scope with font family, weight, and style. Redirect the output to a Lua file and source it from your Neovim config.</p>
+
+        <p>Font family changes require a GUI client (Goneovim, Neovide). Terminal Neovim is limited to bold/italic/underline styling. See the <a href="editors.html">Editor Integration</a> page for details.</p>
+      </section>
+
+      <section id="cli-usage">
+        <h2>CLI Tool</h2>
+        <p>The <code>polyfont</code> CLI provides several subcommands:</p>
+        <table>
+          <thead>
+            <tr><th>Command</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>polyfont check</code></td><td>Validate your config and check font availability on the system.</td></tr>
+            <tr><td><code>polyfont vscode</code></td><td>Generate VSCode <code>settings.json</code> with <code>textMateRules</code>.</td></tr>
+            <tr><td><code>polyfont vscode -o PATH</code></td><td>Write VSCode settings to a file (merges with existing JSON).</td></tr>
+            <tr><td><code>polyfont neovim</code></td><td>Generate Neovim Lua config with highlight groups.</td></tr>
+            <tr><td><code>polyfont kitty</code></td><td>Generate Kitty terminal <code>symbol_map</code> configuration.</td></tr>
+            <tr><td><code>polyfont dump</code></td><td>Debug: show all resolved rules and scope resolution for common scopes.</td></tr>
+          </tbody>
+        </table>
+        <p>Specify a custom config file path with <code>--config PATH</code> (applies to all subcommands):</p>
+<pre><code>polyfont --config /path/to/.polyfont.toml check</code></pre>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>Apache License 2.0 | <a href="https://github.com/WyattAu/polyfont">GitHub</a></p>
+  </footer>
+</body>
+</html>

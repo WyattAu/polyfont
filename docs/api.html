@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Polyfont Rust API reference. Types, traits, and functions for polyfont-core, polyfont-config, polyfont-scope, and polyfont-lsp.">
+  <title>API Reference - Polyfont</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <ul>
+      <li><a href="index.html" class="nav-brand">Polyfont</a></li>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="getting-started.html">Getting Started</a></li>
+      <li><a href="configuration.html">Configuration</a></li>
+      <li><a href="editors.html">Editor Integration</a></li>
+      <li><a href="api.html">API Reference</a></li>
+      <li><a href="https://github.com/WyattAu/polyfont">GitHub</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-layout">
+    <div class="sidebar">
+      <nav>
+        <h3>Documentation</h3>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="getting-started.html">Getting Started</a></li>
+          <li><a href="configuration.html">Configuration</a></li>
+          <li><a href="editors.html">Editor Integration</a></li>
+          <li><a href="api.html" class="active">API Reference</a></li>
+        </ul>
+        <h3>Crates</h3>
+        <ul>
+          <li><a href="#polyfont-core">polyfont-core</a></li>
+          <li><a href="#polyfont-config">polyfont-config</a></li>
+          <li><a href="#polyfont-scope">polyfont-scope</a></li>
+          <li><a href="#polyfont-lsp">polyfont-lsp</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <main class="content">
+      <h1>API Reference</h1>
+      <p>Reference documentation for the Polyfont Rust crates. All crates are part of the same workspace and share a common version.</p>
+
+      <section id="polyfont-core">
+        <div class="api-section">
+          <h2>polyfont-core</h2>
+          <p>Core types, traits, and the scope-match engine. This crate defines the fundamental data structures shared by all other crates.</p>
+
+          <h3>FontWeight</h3>
+          <p>Enum representing CSS-style font weights.</p>
+          <div class="type-def">
+<pre><code>pub enum FontWeight {
+    Thin        = 100,
+    ExtraLight  = 200,
+    Light       = 300,
+    Regular     = 400,  // default
+    Medium      = 500,
+    SemiBold    = 600,
+    Bold        = 700,
+    ExtraBold   = 800,
+    Black       = 900,
+}</code></pre>
+          </div>
+          <p>Implements: <code>Debug</code>, <code>Default</code> (Regular), <code>Clone</code>, <code>Copy</code>, <code>PartialEq</code>, <code>Eq</code>, <code>Serialize</code>, <code>Deserialize</code>, <code>Display</code>.</p>
+          <p>Serialized as kebab-case strings: <code>"thin"</code>, <code>"extra-light"</code>, <code>"light"</code>, <code>"regular"</code>, <code>"medium"</code>, <code>"semi-bold"</code>, <code>"bold"</code>, <code>"extra-bold"</code>, <code>"black"</code>.</p>
+
+          <h3>FontStyle</h3>
+          <p>Enum representing font styles.</p>
+          <div class="type-def">
+<pre><code>pub enum FontStyle {
+    Normal,   // default
+    Italic,
+    Oblique,
+}</code></pre>
+          </div>
+          <p>Implements: <code>Debug</code>, <code>Default</code> (Normal), <code>Clone</code>, <code>Copy</code>, <code>PartialEq</code>, <code>Eq</code>, <code>Serialize</code>, <code>Deserialize</code>, <code>Display</code>.</p>
+
+          <h3>FontSpec</h3>
+          <p>Complete font specification for a rule or default.</p>
+          <div class="type-def">
+<pre><code>pub struct FontSpec {
+    pub family: String,
+    pub fallbacks: Vec&lt;String&gt;,
+    pub weight: FontWeight,
+    pub style: FontStyle,
+    pub size: Option&lt;f32&gt;,
+}</code></pre>
+          </div>
+          <table class="field-table">
+            <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>family</code></td><td><code>String</code></td><td>Primary font family name.</td></tr>
+              <tr><td><code>fallbacks</code></td><td><code>Vec&lt;String&gt;</code></td><td>Fallback font families in priority order. Defaults to empty.</td></tr>
+              <tr><td><code>weight</code></td><td><code>FontWeight</code></td><td>Font weight. Defaults to <code>Regular</code>.</td></tr>
+              <tr><td><code>style</code></td><td><code>FontStyle</code></td><td>Font style. Defaults to <code>Normal</code>.</td></tr>
+              <tr><td><code>size</code></td><td><code>Option&lt;f32&gt;</code></td><td>Font size in points. <code>None</code> inherits from editor.</td></tr>
+            </tbody>
+          </table>
+          <p>Methods:</p>
+          <ul>
+            <li><code>FontSpec::default_font(family: &amp;str) -&gt; Self</code> -- creates a FontSpec with only the family set and all other fields at defaults.</li>
+          </ul>
+
+          <h3>FontRule</h3>
+          <p>A single scope-to-font mapping rule.</p>
+          <div class="type-def">
+<pre><code>pub struct FontRule {
+    pub scope: String,
+    pub font: FontSpec,
+}</code></pre>
+          </div>
+          <table class="field-table">
+            <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>scope</code></td><td><code>String</code></td><td>TextMate scope selector pattern.</td></tr>
+              <tr><td><code>font</code></td><td><code>FontSpec</code></td><td>Font specification for this scope.</td></tr>
+            </tbody>
+          </table>
+          <p>Methods:</p>
+          <ul>
+            <li><code>FontRule::specificity(&amp;self) -&gt; usize</code> -- returns the number of dot-separated segments in the scope. Used for specificity-based resolution.</li>
+          </ul>
+
+          <h3>FontAssignment</h3>
+          <p>The result of resolving a token against the rule set.</p>
+          <div class="type-def">
+<pre><code>pub struct FontAssignment {
+    pub scope: String,
+    pub font: FontSpec,
+    pub specificity: usize,
+    pub is_active: bool,
+}</code></pre>
+          </div>
+          <table class="field-table">
+            <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>scope</code></td><td><code>String</code></td><td>The token's scope that was matched.</td></tr>
+              <tr><td><code>font</code></td><td><code>FontSpec</code></td><td>The resolved font specification.</td></tr>
+              <tr><td><code>specificity</code></td><td><code>usize</code></td><td>Specificity of the winning rule.</td></tr>
+              <tr><td><code>is_active</code></td><td><code>bool</code></td><td>Whether this assignment is currently active.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>TokenInfo</h3>
+          <p>Represents a single syntax token from the editor.</p>
+          <div class="type-def">
+<pre><code>pub struct TokenInfo {
+    pub text: String,
+    pub range: Range,
+    pub scope: String,
+    pub modifiers: Vec&lt;String&gt;,
+}</code></pre>
+          </div>
+          <table class="field-table">
+            <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>text</code></td><td><code>String</code></td><td>The literal text of the token.</td></tr>
+              <tr><td><code>range</code></td><td><code>Range</code></td><td>Start and end position in the document.</td></tr>
+              <tr><td><code>scope</code></td><td><code>String</code></td><td>TextMate scope (e.g., <code>"keyword.control"</code>).</td></tr>
+              <tr><td><code>modifiers</code></td><td><code>Vec&lt;String&gt;</code></td><td>Semantic token modifiers.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>Position and Range</h3>
+          <div class="type-def">
+<pre><code>pub struct Position {
+    pub line: u32,
+    pub column: u32,
+}
+
+pub struct Range {
+    pub start: Position,
+    pub end: Position,
+}</code></pre>
+          </div>
+
+          <h3>TokenCollection</h3>
+          <p>A collection of tokens for a single document.</p>
+          <div class="type-def">
+<pre><code>pub struct TokenCollection {
+    pub uri: String,
+    pub language: String,
+    pub tokens: Vec&lt;TokenInfo&gt;,
+}</code></pre>
+          </div>
+
+          <h3>PolyfontEngine (trait)</h3>
+          <p>The core engine trait. Implemented by <code>ScopeMatchEngine</code>.</p>
+          <div class="type-def">
+<pre><code>pub trait PolyfontEngine: Send + Sync {
+    fn add_rule(&amp;mut self, rule: FontRule);
+    fn remove_rule(&amp;mut self, scope: &amp;str);
+    fn rules(&amp;self) -&gt; &amp;[FontRule];
+    fn resolve_token(&amp;self, token: &amp;TokenInfo) -&gt; Option&lt;FontAssignment&gt;;
+    fn resolve_all(&amp;self, tokens: &amp;[TokenInfo]) -&gt; Vec&lt;Option&lt;FontAssignment&gt;&gt;;
+    fn clear(&amp;mut self);
+}</code></pre>
+          </div>
+          <table class="field-table">
+            <thead><tr><th>Method</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>add_rule</code></td><td>Add a font rule. Rules are re-sorted by specificity after insertion.</td></tr>
+              <tr><td><code>remove_rule</code></td><td>Remove a rule by its exact scope string.</td></tr>
+              <tr><td><code>rules</code></td><td>Get a slice of all current rules, sorted by specificity (descending).</td></tr>
+              <tr><td><code>resolve_token</code></td><td>Resolve a single token to its font assignment. Returns <code>None</code> if no rule matches.</td></tr>
+              <tr><td><code>resolve_all</code></td><td>Resolve a batch of tokens. Returns a parallel <code>Vec&lt;Option&lt;FontAssignment&gt;&gt;</code>.</td></tr>
+              <tr><td><code>clear</code></td><td>Remove all rules.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>ScopeMatchEngine</h3>
+          <p>The default implementation of <code>PolyfontEngine</code>. Rules are stored sorted by specificity (descending) and the first matching rule wins.</p>
+          <div class="type-def">
+<pre><code>pub struct ScopeMatchEngine {
+    // rules sorted by specificity descending
+}
+
+impl ScopeMatchEngine {
+    pub const fn new() -&gt; Self;
+    pub fn from_rules(rules: Vec&lt;FontRule&gt;) -&gt; Self;
+    pub fn scope_matches(scope: &amp;str, pattern: &amp;str) -&gt; bool;
+}</code></pre>
+          </div>
+          <p><code>scope_matches</code> implements hierarchical matching: <code>"keyword"</code> matches <code>"keyword"</code>, <code>"keyword.control"</code>, <code>"keyword.operator"</code>, etc. The pattern <code>"*"</code> matches any scope.</p>
+
+          <h3>PolyfontError</h3>
+          <div class="type-def">
+<pre><code>pub enum PolyfontError {
+    Config(String),
+    FontNotFound(String),
+    InvalidScope(String),
+    Io(std::io::Error),
+    Parse(String),
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="polyfont-config">
+        <div class="api-section">
+          <h2>polyfont-config</h2>
+          <p>Configuration file parsing, validation, and merging. Handles <code>.polyfont.toml</code> discovery, loading, and hierarchical config merging.</p>
+
+          <h3>PolyfontConfig</h3>
+          <p>The root configuration type.</p>
+          <div class="type-def">
+<pre><code>pub struct PolyfontConfig {
+    pub version: u32,
+    pub default: Option&lt;DefaultFontConfig&gt;,
+    pub rules: Vec&lt;RuleConfig&gt;,
+}</code></pre>
+          </div>
+          <p>Methods:</p>
+          <ul>
+            <li><code>validate(&amp;self) -&gt; Result&lt;(), ConfigError&gt;</code> -- checks version is 1, default family is non-empty, all rule scopes and families are non-empty.</li>
+            <li><code>to_rules(&amp;self) -&gt; Vec&lt;FontRule&gt;</code> -- converts config rules to <code>FontRule</code> objects. Appends a catchall <code>*</code> rule from the default section if present.</li>
+            <li><code>PolyfontConfig::merge(base, overlay) -&gt; Self</code> -- merges two configs. The overlay's rules replace the base's rules. The overlay's default replaces the base's default if present.</li>
+          </ul>
+
+          <h3>DefaultFontConfig</h3>
+          <div class="type-def">
+<pre><code>pub struct DefaultFontConfig {
+    pub family: String,
+    pub fallbacks: Vec&lt;String&gt;,
+    pub weight: FontWeight,
+    pub style: FontStyle,
+    pub size: Option&lt;f32&gt;,
+}</code></pre>
+          </div>
+
+          <h3>RuleConfig</h3>
+          <div class="type-def">
+<pre><code>pub struct RuleConfig {
+    pub scope: String,
+    pub font: FontConfig,
+}</code></pre>
+          </div>
+
+          <h3>FontConfig</h3>
+          <div class="type-def">
+<pre><code>pub struct FontConfig {
+    pub family: String,
+    pub fallbacks: Vec&lt;String&gt;,
+    pub weight: FontWeight,
+    pub style: FontStyle,
+    pub size: Option&lt;f32&gt;,
+}</code></pre>
+          </div>
+
+          <h3>ConfigLoader</h3>
+          <p>Static methods for discovering and loading config files.</p>
+          <div class="type-def">
+<pre><code>pub struct ConfigLoader;
+
+impl ConfigLoader {
+    pub fn load_from_path(path: &amp;Path) -&gt; Result&lt;PolyfontConfig, ConfigError&gt;;
+    pub fn load_from_dir(start_dir: &amp;Path) -&gt; Result&lt;PolyfontConfig, ConfigError&gt;;
+    pub fn find_config(start_dir: &amp;Path) -&gt; Option&lt;PathBuf&gt;;
+    pub fn load_merged(start_dir: &amp;Path) -&gt; Result&lt;PolyfontConfig, ConfigError&gt;;
+}</code></pre>
+          </div>
+          <table class="field-table">
+            <thead><tr><th>Method</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>load_from_path</code></td><td>Load and validate a config from an explicit file path.</td></tr>
+              <tr><td><code>load_from_dir</code></td><td>Search upward from <code>start_dir</code> for <code>.polyfont.toml</code> and load the first one found.</td></tr>
+              <tr><td><code>find_config</code></td><td>Search upward for <code>.polyfont.toml</code>. Returns the path or <code>None</code>.</td></tr>
+              <tr><td><code>load_merged</code></td><td>Find all <code>.polyfont.toml</code> files from ancestor dirs to the current directory. Load and merge them in order (outermost first), so the nearest config takes precedence.</td></tr>
+            </tbody>
+          </table>
+
+          <h3>ConfigError</h3>
+          <div class="type-def">
+<pre><code>pub enum ConfigError {
+    UnsupportedVersion { found: u32, expected: u32 },
+    Validation(String),
+    Io(std::io::Error),
+    Parse(toml::de::Error),
+    NotFound(PathBuf),
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="polyfont-scope">
+        <div class="api-section">
+          <h2>polyfont-scope</h2>
+          <p>TextMate scope matching, specificity resolution, and scope tree data structures. Extends the basic matching in <code>polyfont-core</code> with support for wildcards, negation, and comma-separated selectors.</p>
+
+          <h3>ScopePattern</h3>
+          <p>A single scope pattern, optionally negated.</p>
+          <div class="type-def">
+<pre><code>pub struct ScopePattern { /* private fields */ }
+
+impl ScopePattern {
+    pub fn parse(pattern: &amp;str) -&gt; Result&lt;Self, ScopeError&gt;;
+    pub fn matches_scope(&amp;self, scope: &amp;str) -&gt; bool;
+    pub fn specificity(&amp;self) -&gt; usize;
+}</code></pre>
+          </div>
+          <p>Supports: literal segments (<code>"entity.name"</code>), wildcard segments (<code>"entity.*"</code>), negation prefix (<code>"-keyword.operator"</code>).</p>
+
+          <h3>ScopeSelector</h3>
+          <p>A comma-separated list of scope patterns (OR logic). Negative patterns exclude matches.</p>
+          <div class="type-def">
+<pre><code>pub struct ScopeSelector { /* private fields */ }
+
+impl ScopeSelector {
+    pub fn parse(selector: &amp;str) -&gt; Result&lt;Self, ScopeError&gt;;
+    pub fn matches(&amp;self, scope: &amp;str) -&gt; bool;
+    pub fn specificity(&amp;self) -&gt; usize;
+}</code></pre>
+          </div>
+          <p>Example: <code>"keyword,-keyword.operator"</code> matches <code>keyword.control</code> but not <code>keyword.operator</code>.</p>
+
+          <h3>ScopeMatcher</h3>
+          <p>Convenience functions for one-off matching.</p>
+          <div class="type-def">
+<pre><code>pub struct ScopeMatcher;
+
+impl ScopeMatcher {
+    pub fn matches(scope: &amp;str, selector: &amp;str) -&gt; Result&lt;bool, ScopeError&gt;;
+    pub fn matches_any(scope: &amp;str, selectors: &amp;[&amp;str]) -&gt; Result&lt;bool, ScopeError&gt;;
+}</code></pre>
+          </div>
+
+          <h3>ScopeResolver</h3>
+          <p>Resolves scopes to font assignments using specificity and insertion-order tiebreaking.</p>
+          <div class="type-def">
+<pre><code>pub struct ScopeResolver { /* private fields */ }
+
+impl ScopeResolver {
+    pub const fn new() -&gt; Self;
+    pub fn from_rules(rules: Vec&lt;FontRule&gt;) -&gt; Self;
+    pub fn add_rule(&amp;mut self, rule: FontRule);
+    pub fn resolve(&amp;self, scope: &amp;str) -&gt; Option&lt;ResolvedScope&gt;;
+    pub fn resolve_all&lt;'a, I&gt;(&amp;self, scopes: I) -&gt; Vec&lt;Option&lt;ResolvedScope&gt;&gt;;
+    pub fn clear(&amp;mut self);
+    pub const fn rule_count(&amp;self) -&gt; usize;
+}</code></pre>
+          </div>
+
+          <h3>ResolvedScope</h3>
+          <div class="type-def">
+<pre><code>pub struct ResolvedScope {
+    pub assignment: FontAssignment,
+    pub rule_index: usize,
+}</code></pre>
+          </div>
+
+          <h3>ScopeTree</h3>
+          <p>A trie data structure for efficient scope prefix queries.</p>
+          <div class="type-def">
+<pre><code>pub struct ScopeTree { /* private fields */ }
+
+impl ScopeTree {
+    pub fn new() -&gt; Self;
+    pub fn insert(&amp;mut self, scope: &amp;str);
+    pub fn contains(&amp;self, scope: &amp;str) -&gt; bool;
+    pub fn has_prefix(&amp;self, prefix: &amp;str) -&gt; bool;
+    pub fn query_prefix(&amp;self, prefix: &amp;str) -&gt; Vec&lt;String&gt;;
+    pub fn len(&amp;self) -&gt; usize;
+    pub fn is_empty(&amp;self) -&gt; bool;
+}</code></pre>
+          </div>
+
+          <h3>ScopeError</h3>
+          <div class="type-def">
+<pre><code>pub enum ScopeError {
+    EmptyPattern,
+    InvalidPattern(String),
+}</code></pre>
+          </div>
+
+          <h3>Scope Constants</h3>
+          <p>Commonly used scope strings as constants:</p>
+          <div class="type-def">
+<pre><code>pub const SCOPE_KEYWORD:     &amp;str = "keyword";
+pub const SCOPE_COMMENT:     &amp;str = "comment";
+pub const SCOPE_STRING:      &amp;str = "string";
+pub const SCOPE_FUNCTION:    &amp;str = "entity.name.function";
+pub const SCOPE_VARIABLE:    &amp;str = "variable";
+pub const SCOPE_CONSTANT:    &amp;str = "constant";
+pub const SCOPE_TYPE:        &amp;str = "entity.name.type";
+pub const SCOPE_NUMBER:      &amp;str = "constant.numeric";
+pub const SCOPE_OPERATOR:    &amp;str = "keyword.operator";
+pub const SCOPE_PUNCTUATION: &amp;str = "punctuation";
+pub const SCOPE_TAG:         &amp;str = "entity.name.tag";
+pub const SCOPE_ATTRIBUTE:   &amp;str = "entity.other.attribute-name";</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="polyfont-lsp">
+        <div class="api-section">
+          <h2>polyfont-lsp</h2>
+          <p>Language Server Protocol server for editor integration. Built on <code>tower-lsp</code>. Provides real-time font assignment notifications to connected editors.</p>
+
+          <h3>PolyfontLanguageServer</h3>
+          <p>The LSP server implementation.</p>
+          <div class="type-def">
+<pre><code>pub struct PolyfontLanguageServer { /* private fields */ }
+
+impl PolyfontLanguageServer {
+    pub fn new(client: Client) -&gt; Self;
+    pub fn build_service() -&gt; (LspService&lt;Self&gt;, ClientSocket);
+}</code></pre>
+          </div>
+
+          <h3>LSP Protocol</h3>
+          <h4>Capabilities</h4>
+          <ul>
+            <li>Text document synchronization: full</li>
+            <li>Custom method: <code>polyfont/requestFontAssignments</code></li>
+          </ul>
+
+          <h4>Custom notification: <code>polyfont/fontAssignments</code></h4>
+          <p>Sent to the client when a document is opened or changed.</p>
+          <div class="type-def">
+<pre><code>pub struct FontAssignmentNotification {
+    pub uri: String,
+    pub assignments: Vec&lt;FontAssignmentEntry&gt;,
+}</code></pre>
+          </div>
+
+          <h4>FontAssignmentEntry</h4>
+          <div class="type-def">
+<pre><code>pub struct FontAssignmentEntry {
+    pub scope: String,
+    pub range: LspRange,
+    pub font: FontInfo,
+}</code></pre>
+          </div>
+
+          <h4>FontInfo</h4>
+          <div class="type-def">
+<pre><code>pub struct FontInfo {
+    pub family: String,
+    pub fallbacks: Vec&lt;String&gt;,
+    pub weight: String,
+    pub style: String,
+}</code></pre>
+          </div>
+          <p><code>weight</code> and <code>style</code> are omitted from serialization when they are the defaults (<code>"regular"</code> and <code>"normal"</code>). <code>fallbacks</code> is omitted when empty.</p>
+
+          <h4>Custom request: <code>polyfont/requestFontAssignments</code></h4>
+          <p>Request font assignments for a specific document URI.</p>
+          <p>Params:</p>
+          <div class="type-def">
+<pre><code>{ "uri": "file:///path/to/document.rs" }</code></pre>
+          </div>
+          <p>Returns: <code>FontAssignmentNotification | null</code></p>
+
+          <h4>LSP types</h4>
+          <div class="type-def">
+<pre><code>pub struct LspRange {
+    pub start: LspPosition,
+    pub end: LspPosition,
+}
+
+pub struct LspPosition {
+    pub line: u32,
+    pub character: u32,
+}</code></pre>
+          </div>
+
+          <h3>LSP Server Binary</h3>
+          <p>The <code>polyfont-lsp</code> crate produces a binary that runs the LSP server over stdio:</p>
+<pre><code>cargo build --release -p polyfont-lsp
+./target/release/polyfont-lsp</code></pre>
+          <p>Configure your editor to start <code>polyfont-lsp</code> as a language server. The server will search for <code>.polyfont.toml</code> in the workspace root.</p>
+
+          <h3>Configuration Reloading</h3>
+          <p>The LSP server reloads the config on <code>didChangeConfiguration</code> notifications. After reloading, it re-publishes font assignments for all open documents.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>Apache License 2.0 | <a href="https://github.com/WyattAu/polyfont">GitHub</a></p>
+  </footer>
+</body>
+</html>

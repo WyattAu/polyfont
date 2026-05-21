@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Polyfont configuration reference. Complete .polyfont.toml schema, scope matching rules, font weights, and all example rules.">
+  <title>Configuration - Polyfont</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <ul>
+      <li><a href="index.html" class="nav-brand">Polyfont</a></li>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="getting-started.html">Getting Started</a></li>
+      <li><a href="configuration.html">Configuration</a></li>
+      <li><a href="editors.html">Editor Integration</a></li>
+      <li><a href="api.html">API Reference</a></li>
+      <li><a href="https://github.com/WyattAu/polyfont">GitHub</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-layout">
+    <div class="sidebar">
+      <nav>
+        <h3>Documentation</h3>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="getting-started.html">Getting Started</a></li>
+          <li><a href="configuration.html" class="active">Configuration</a></li>
+          <li><a href="editors.html">Editor Integration</a></li>
+          <li><a href="api.html">API Reference</a></li>
+        </ul>
+        <h3>On This Page</h3>
+        <ul>
+          <li><a href="#schema">Config Schema</a></li>
+          <li><a href="#default-section">Default Font</a></li>
+          <li><a href="#font-rule">Font Rule</a></li>
+          <li><a href="#font-spec">Font Spec Fields</a></li>
+          <li><a href="#weights">Font Weights</a></li>
+          <li><a href="#styles">Font Styles</a></li>
+          <li><a href="#scope-matching">Scope Matching</a></li>
+          <li><a href="#example-rules">Example Rules</a></li>
+          <li><a href="#scope-reference">Scope Reference</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <main class="content">
+      <h1>Configuration Reference</h1>
+      <p>Polyfont is configured via a <code>.polyfont.toml</code> file placed in your project root or home directory. The config loader searches upward from the current directory to find the nearest config file.</p>
+
+      <section id="schema">
+        <h2>Top-level Schema</h2>
+        <table>
+          <thead>
+            <tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>version</code></td>
+              <td>integer</td>
+              <td><span class="badge badge-required">required</span></td>
+              <td>--</td>
+              <td>Config format version. Must be <code>1</code>.</td>
+            </tr>
+            <tr>
+              <td><code>default</code></td>
+              <td>table</td>
+              <td><span class="badge badge-optional">optional</span></td>
+              <td>none</td>
+              <td>Default font applied when no rule matches. Becomes the <code>*</code> catchall rule.</td>
+            </tr>
+            <tr>
+              <td><code>rules</code></td>
+              <td>array of tables</td>
+              <td><span class="badge badge-optional">optional</span></td>
+              <td><code>[]</code></td>
+              <td>Array of font rules mapping scopes to fonts.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="default-section">
+        <h2>Default Font Section</h2>
+        <p>The <code>[default]</code> section defines the fallback font for any token not matched by a rule. If specified, it becomes a catchall rule with scope <code>*</code>.</p>
+        <table>
+          <thead>
+            <tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>family</code></td>
+              <td>string</td>
+              <td><span class="badge badge-required">required</span></td>
+              <td>--</td>
+              <td>Primary font family name. Must not be empty.</td>
+            </tr>
+            <tr>
+              <td><code>fallbacks</code></td>
+              <td>string[]</td>
+              <td><span class="badge badge-optional">optional</span></td>
+              <td><code>[]</code></td>
+              <td>Fallback font families in priority order.</td>
+            </tr>
+            <tr>
+              <td><code>weight</code></td>
+              <td>string</td>
+              <td><span class="badge badge-optional">optional</span></td>
+              <td><code>"regular"</code></td>
+              <td>Font weight. See weight values below.</td>
+            </tr>
+            <tr>
+              <td><code>style</code></td>
+              <td>string</td>
+              <td><span class="badge badge-optional">optional</span></td>
+              <td><code>"normal"</code></td>
+              <td>Font style. One of <code>normal</code>, <code>italic</code>, <code>oblique</code>.</td>
+            </tr>
+            <tr>
+              <td><code>size</code></td>
+              <td>number</td>
+              <td><span class="badge badge-optional">optional</span></td>
+              <td>none</td>
+              <td>Font size in points. Omit to inherit from the editor.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="font-rule">
+        <h2>Font Rule</h2>
+        <p>Each entry in the <code>[[rules]]</code> array maps a TextMate scope to a font specification:</p>
+        <table>
+          <thead>
+            <tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>scope</code></td>
+              <td>string</td>
+              <td><span class="badge badge-required">required</span></td>
+              <td>--</td>
+              <td>TextMate scope selector. Must not be empty. Supports hierarchical matching, wildcards, and negation.</td>
+            </tr>
+            <tr>
+              <td><code>font.family</code></td>
+              <td>string</td>
+              <td><span class="badge badge-required">required</span></td>
+              <td>--</td>
+              <td>Primary font family name. Must not be empty.</td>
+            </tr>
+            <tr>
+              <td><code>font.fallbacks</code></td>
+              <td>string[]</td>
+              <td><span class="badge badge-optional">optional</span></td>
+              <td><code>[]</code></td>
+              <td>Fallback font families in priority order.</td>
+            </tr>
+            <tr>
+              <td><code>font.weight</code></td>
+              <td>string</td>
+              <td><span class="badge badge-optional">optional</span></td>
+              <td><code>"regular"</code></td>
+              <td>Font weight. See weight values below.</td>
+            </tr>
+            <tr>
+              <td><code>font.style</code></td>
+              <td>string</td>
+              <td><span class="badge badge-optional">optional</span></td>
+              <td><code>"normal"</code></td>
+              <td>Font style. One of <code>normal</code>, <code>italic</code>, <code>oblique</code>.</td>
+            </tr>
+            <tr>
+              <td><code>font.size</code></td>
+              <td>number</td>
+              <td><span class="badge badge-optional">optional</span></td>
+              <td>none</td>
+              <td>Font size in points. Omit to inherit from the editor.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="font-spec">
+        <h2>Font Spec Fields</h2>
+        <p>Both the <code>[default]</code> section and each <code>[rules.font]</code> section share the same font specification fields. In TOML, font fields are nested under the rule:</p>
+<pre><code>[[rules]]
+scope = "keyword"
+[rules.font]
+family = "Maple Mono"
+weight = "bold"</code></pre>
+      </section>
+
+      <section id="weights">
+        <h2>Font Weight Values</h2>
+        <table>
+          <thead>
+            <tr><th>TOML Value</th><th>CSS Value</th><th>Numeric</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>"thin"</code></td><td>100</td><td>100</td></tr>
+            <tr><td><code>"extra-light"</code></td><td>200</td><td>200</td></tr>
+            <tr><td><code>"light"</code></td><td>300</td><td>300</td></tr>
+            <tr><td><code>"regular"</code></td><td>normal</td><td>400</td></tr>
+            <tr><td><code>"medium"</code></td><td>500</td><td>500</td></tr>
+            <tr><td><code>"semi-bold"</code></td><td>600</td><td>600</td></tr>
+            <tr><td><code>"bold"</code></td><td>bold</td><td>700</td></tr>
+            <tr><td><code>"extra-bold"</code></td><td>800</td><td>800</td></tr>
+            <tr><td><code>"black"</code></td><td>900</td><td>900</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="styles">
+        <h2>Font Style Values</h2>
+        <table>
+          <thead>
+            <tr><th>TOML Value</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>"normal"</code></td><td>Upright (default)</td></tr>
+            <tr><td><code>"italic"</code></td><td>Italic variant</td></tr>
+            <tr><td><code>"oblique"</code></td><td>Oblique variant</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="scope-matching">
+        <h2>Scope Matching Rules</h2>
+        <p>Scopes use TextMate notation with hierarchical matching. Understanding these rules is essential for writing correct configurations.</p>
+
+        <h3>Hierarchical matching</h3>
+        <p>A scope pattern matches any scope that starts with the same segments:</p>
+        <table>
+          <thead>
+            <tr><th>Pattern</th><th>Matches</th><th>Does not match</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>"keyword"</code></td><td><code>keyword</code>, <code>keyword.control</code>, <code>keyword.operator</code></td><td><code>keywordx</code></td></tr>
+            <tr><td><code>"entity.name"</code></td><td><code>entity.name</code>, <code>entity.name.function</code>, <code>entity.name.type</code></td><td><code>entity.type</code></td></tr>
+            <tr><td><code>"entity.name.function"</code></td><td><code>entity.name.function</code></td><td><code>entity.name.type</code></td></tr>
+          </tbody>
+        </table>
+
+        <h3>Wildcard</h3>
+        <p>The <code>*</code> pattern matches every scope. When a <code>[default]</code> section is defined, it becomes a catchall rule with scope <code>*</code>.</p>
+        <p>Segment-level wildcards are also supported: <code>"entity.*"</code> matches <code>entity.name</code>, <code>entity.type</code>, and any child.</p>
+
+        <h3>Specificity</h3>
+        <p>When multiple rules match a scope, the most specific rule wins. Specificity is determined by the number of literal (non-wildcard) segments in the pattern:</p>
+        <table>
+          <thead>
+            <tr><th>Pattern</th><th>Specificity</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>"keyword"</code></td><td>1</td></tr>
+            <tr><td><code>"keyword.control"</code></td><td>2</td></tr>
+            <tr><td><code>"entity.name.function"</code></td><td>3</td></tr>
+            <tr><td><code>"*"</code></td><td>1 (matches all, lowest priority)</td></tr>
+            <tr><td><code>"entity.*"</code></td><td>1 (literal segments only)</td></tr>
+          </tbody>
+        </table>
+        <p>If two rules have equal specificity, the rule that appears first in the config wins.</p>
+
+        <h3>Negation</h3>
+        <p>Prefix a scope pattern with <code>-</code> to exclude it from matching. Use commas to combine positive and negative patterns:</p>
+        <table>
+          <thead>
+            <tr><th>Selector</th><th>Behavior</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>"keyword,-keyword.operator"</code></td><td>Matches <code>keyword</code> and <code>keyword.control</code> but not <code>keyword.operator</code>.</td></tr>
+            <tr><td><code>"entity,entity.name.function"</code></td><td>Matches <code>entity</code> or <code>entity.name.function</code> (comma = OR).</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="example-rules">
+        <h2>All 17 Example Rules</h2>
+        <p>These are the complete rules from <code>polyfont.example.toml</code>:</p>
+        <table>
+          <thead>
+            <tr><th>#</th><th>Scope</th><th>Font Family</th><th>Weight</th><th>Style</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td><code>keyword</code></td><td>Maple Mono</td><td>bold</td><td>--</td></tr>
+            <tr><td>2</td><td><code>keyword.control</code></td><td>Maple Mono</td><td>bold</td><td>--</td></tr>
+            <tr><td>3</td><td><code>comment</code></td><td>IBM Plex Mono</td><td>--</td><td>italic</td></tr>
+            <tr><td>4</td><td><code>string</code></td><td>Source Code Pro</td><td>light</td><td>--</td></tr>
+            <tr><td>5</td><td><code>string.quoted</code></td><td>Source Code Pro</td><td>light</td><td>--</td></tr>
+            <tr><td>6</td><td><code>entity.name.function</code></td><td>Monaspace Argon</td><td>semi-bold</td><td>--</td></tr>
+            <tr><td>7</td><td><code>entity.name.type</code></td><td>Monaspace Neon</td><td>semi-bold</td><td>--</td></tr>
+            <tr><td>8</td><td><code>variable</code></td><td>JetBrains Mono</td><td>--</td><td>--</td></tr>
+            <tr><td>9</td><td><code>variable.parameter</code></td><td>JetBrains Mono</td><td>--</td><td>italic</td></tr>
+            <tr><td>10</td><td><code>constant</code></td><td>Monaspace Radon</td><td>bold</td><td>--</td></tr>
+            <tr><td>11</td><td><code>constant.numeric</code></td><td>Monaspace Radon</td><td>--</td><td>--</td></tr>
+            <tr><td>12</td><td><code>support.function</code></td><td>Monaspace Krypton</td><td>--</td><td>--</td></tr>
+            <tr><td>13</td><td><code>storage.type</code></td><td>Maple Mono</td><td>bold</td><td>italic</td></tr>
+            <tr><td>14</td><td><code>punctuation</code></td><td>Fira Code</td><td>--</td><td>--</td></tr>
+            <tr><td>15</td><td><code>operator</code></td><td>Fira Code</td><td>--</td><td>--</td></tr>
+            <tr><td>16</td><td><code>meta.tag</code></td><td>Monaspace Xenon</td><td>bold</td><td>--</td></tr>
+            <tr><td>17</td><td><code>attribute</code></td><td>IBM Plex Mono</td><td>--</td><td>italic</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="scope-reference">
+        <h2>Scope Reference</h2>
+        <p>Common TextMate scopes used in programming language grammars:</p>
+        <table>
+          <thead>
+            <tr><th>Scope</th><th>Description</th><th>Typical Tokens</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>keyword</code></td><td>Language keywords</td><td><code>if</code>, <code>else</code>, <code>fn</code>, <code>let</code></td></tr>
+            <tr><td><code>keyword.control</code></td><td>Control flow keywords</td><td><code>if</code>, <code>for</code>, <code>while</code>, <code>return</code></td></tr>
+            <tr><td><code>keyword.operator</code></td><td>Operator keywords</td><td><code>and</code>, <code>or</code>, <code>not</code></td></tr>
+            <tr><td><code>comment</code></td><td>Comments</td><td><code>// ...</code>, <code>/* ... */</code></td></tr>
+            <tr><td><code>comment.line</code></td><td>Line comments</td><td><code>// ...</code></td></tr>
+            <tr><td><code>comment.block</code></td><td>Block comments</td><td><code>/* ... */</code></td></tr>
+            <tr><td><code>string</code></td><td>String literals</td><td><code>"hello"</code>, <code>'world'</code></td></tr>
+            <tr><td><code>string.quoted</code></td><td>Quoted strings</td><td><code>"hello"</code></td></tr>
+            <tr><td><code>string.quoted.double</code></td><td>Double-quoted strings</td><td><code>"hello"</code></td></tr>
+            <tr><td><code>string.quoted.single</code></td><td>Single-quoted strings</td><td><code>'hello'</code></td></tr>
+            <tr><td><code>string.template</code></td><td>Template strings</td><td><code>`hello ${name}`</code></td></tr>
+            <tr><td><code>entity.name.function</code></td><td>Function names</td><td><code>calculate_total</code></td></tr>
+            <tr><td><code>entity.name.type</code></td><td>Type names</td><td><code>MyStruct</code>, <code>MyEnum</code></td></tr>
+            <tr><td><code>entity.name.tag</code></td><td>HTML/XML tags</td><td><code>&lt;div&gt;</code></td></tr>
+            <tr><td><code>entity.other.attribute-name</code></td><td>Attribute names</td><td><code>class</code>, <code>id</code></td></tr>
+            <tr><td><code>variable</code></td><td>Variables</td><td><code>count</code>, <code>result</code></td></tr>
+            <tr><td><code>variable.parameter</code></td><td>Function parameters</td><td><code>items</code>, <code>name</code></td></tr>
+            <tr><td><code>variable.other</code></td><td>Other variables</td><td><code>local_var</code></td></tr>
+            <tr><td><code>constant</code></td><td>Constants</td><td><code>MAX_SIZE</code>, <code>PI</code></td></tr>
+            <tr><td><code>constant.numeric</code></td><td>Numeric literals</td><td><code>42</code>, <code>3.14</code>, <code>0xFF</code></td></tr>
+            <tr><td><code>constant.language</code></td><td>Language constants</td><td><code>true</code>, <code>false</code>, <code>null</code></td></tr>
+            <tr><td><code>support.function</code></td><td>Built-in/library functions</td><td><code>println</code>, <code>len</code></td></tr>
+            <tr><td><code>support.type</code></td><td>Built-in types</td><td><code>String</code>, <code>Vec</code></td></tr>
+            <tr><td><code>storage.type</code></td><td>Type annotations/declarations</td><td><code>i32</code>, <code>String</code></td></tr>
+            <tr><td><code>storage.modifier</code></td><td>Storage modifiers</td><td><code>mut</code>, <code>const</code>, <code>static</code></td></tr>
+            <tr><td><code>punctuation</code></td><td>Punctuation characters</td><td><code>(</code>, <code>)</code>, <code>{</code>, <code>}</code></td></tr>
+            <tr><td><code>punctuation.separator</code></td><td>Separators</td><td><code>,</code>, <code>;</code>, <code>.</code></td></tr>
+            <tr><td><code>operator</code></td><td>Operators</td><td><code>+</code>, <code>-</code>, <code>==</code>, <code>&amp;&amp;</code></td></tr>
+            <tr><td><code>meta.tag</code></td><td>Tags (HTML/XML)</td><td><code>&lt;div&gt;</code></td></tr>
+            <tr><td><code>attribute</code></td><td>Attributes</td><td><code>href</code>, <code>class</code></td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>Apache License 2.0 | <a href="https://github.com/WyattAu/polyfont">GitHub</a></p>
+  </footer>
+</body>
+</html>

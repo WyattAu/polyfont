@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Polyfont - Per-token font highlighting for code editors. Use different fonts for keywords, functions, comments, strings, and more.">
+  <title>Polyfont - Per-token font highlighting for code editors</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <ul>
+      <li><a href="index.html" class="nav-brand">Polyfont</a></li>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="getting-started.html">Getting Started</a></li>
+      <li><a href="configuration.html">Configuration</a></li>
+      <li><a href="editors.html">Editor Integration</a></li>
+      <li><a href="api.html">API Reference</a></li>
+      <li><a href="https://github.com/WyattAu/polyfont">GitHub</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-layout">
+    <div class="sidebar">
+      <nav>
+        <h3>Documentation</h3>
+        <ul>
+          <li><a href="index.html" class="active">Home</a></li>
+          <li><a href="getting-started.html">Getting Started</a></li>
+          <li><a href="configuration.html">Configuration</a></li>
+          <li><a href="editors.html">Editor Integration</a></li>
+          <li><a href="api.html">API Reference</a></li>
+        </ul>
+        <h3>Links</h3>
+        <ul>
+          <li><a href="https://github.com/WyattAu/polyfont">GitHub Repository</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <main class="content">
+      <section class="hero">
+        <h1>Polyfont</h1>
+        <p class="tagline">Per-token font highlighting for code editors</p>
+        <p>Go beyond color. Use different fonts for keywords, functions, comments, strings, and more.</p>
+        <a href="getting-started.html" class="cta">Get Started</a>
+      </section>
+
+      <section>
+        <h2>What it does</h2>
+        <p>Most code editors support per-token <strong>color</strong> highlighting. Polyfont extends this to per-token <strong>font</strong> highlighting. Assign distinct font families, weights, and styles to different syntax tokens -- keywords in Maple Mono Bold, functions in Monaspace Argon, comments in IBM Plex Mono Italic, strings in Source Code Pro Light.</p>
+      </section>
+
+      <section>
+        <h2>Example</h2>
+<pre><code>fn calculate_total(items: &amp;[Item]) -&gt; f64 {    &lt;-- keyword (Maple Mono Bold)
+// Computes the total price                    &lt;-- comment (IBM Plex Mono Italic)
+    let sum: f64 = items                       &lt;-- variable (JetBrains Mono)
+        .iter()                                &lt;-- function (Monaspace Argon)
+        .map(|item| item.price)                &lt;-- function (Monaspace Argon)
+        .sum();                                &lt;-- method (Monaspace Krypton)
+    sum * 1.08                                 &lt;-- constant (Monaspace Radon)
+}                                              &lt;-- punctuation (Fira Code)</code></pre>
+      </section>
+
+      <section>
+        <h2>Architecture</h2>
+<pre class="ascii-art"><code>+--------------------------------------------------+
+|  .polyfont.toml                                   |
+|  Config: scope -&gt; font mappings                   |
++---------------------------+------------------------+
+                            |
+              +-------------+-------------+
+              |       polyfont-core       |
+              |   Rust library            |
+              |   Scope resolution        |
+              |   Font assignment         |
+              +--+-------------+----------+
+                 |             |          |
+    +------------+   +---------+   +------+------------+
+    |  VSCode    |   | Neovim  |   |  CLI / LSP        |
+    |  Extension |   | Plugin  |   |  polyfont check   |
+    |            |   |         |   |  polyfont vscode  |
+    | textMate   |   | Tree-   |   |  polyfont neovim  |
+    | Rules API  |   | sitter  |   |  polyfont kitty   |
+    |            |   | +extmarks|  |                    |
+    +------------+   +---------+   +-------------------+</code></pre>
+      </section>
+
+      <section>
+        <h2>Documentation</h2>
+        <div class="card-grid">
+          <div class="card">
+            <h3><a href="getting-started.html">Getting Started</a></h3>
+            <p>Install Polyfont, create your first config, and apply fonts in your editor.</p>
+          </div>
+          <div class="card">
+            <h3><a href="configuration.html">Configuration</a></h3>
+            <p>Complete reference for .polyfont.toml: schema, scope matching, font weights, and all example rules.</p>
+          </div>
+          <div class="card">
+            <h3><a href="editors.html">Editor Integration</a></h3>
+            <p>VSCode, Neovim, Kitty terminal setup guides, compatibility matrix, and troubleshooting.</p>
+          </div>
+          <div class="card">
+            <h3><a href="api.html">API Reference</a></h3>
+            <p>Rust crate documentation for polyfont-core, polyfont-config, polyfont-scope, and polyfont-lsp.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>Apache License 2.0 | <a href="https://github.com/WyattAu/polyfont">GitHub</a></p>
+  </footer>
+</body>
+</html>

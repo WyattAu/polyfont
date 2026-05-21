@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Editor integration guide for Polyfont. Setup instructions for VSCode, Neovim, Kitty terminal, and compatibility matrix.">
+  <title>Editor Integration - Polyfont</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <ul>
+      <li><a href="index.html" class="nav-brand">Polyfont</a></li>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="getting-started.html">Getting Started</a></li>
+      <li><a href="configuration.html">Configuration</a></li>
+      <li><a href="editors.html">Editor Integration</a></li>
+      <li><a href="api.html">API Reference</a></li>
+      <li><a href="https://github.com/WyattAu/polyfont">GitHub</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-layout">
+    <div class="sidebar">
+      <nav>
+        <h3>Documentation</h3>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="getting-started.html">Getting Started</a></li>
+          <li><a href="configuration.html">Configuration</a></li>
+          <li><a href="editors.html" class="active">Editor Integration</a></li>
+          <li><a href="api.html">API Reference</a></li>
+        </ul>
+        <h3>On This Page</h3>
+        <ul>
+          <li><a href="#compatibility">Compatibility Matrix</a></li>
+          <li><a href="#vscode">VSCode</a></li>
+          <li><a href="#neovim">Neovim</a></li>
+          <li><a href="#kitty">Kitty Terminal</a></li>
+          <li><a href="#limitations">Known Limitations</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <main class="content">
+      <h1>Editor Integration</h1>
+      <p>Polyfont supports multiple editors through different integration mechanisms. The level of support depends on the editor's ability to apply per-token font styling.</p>
+
+      <section id="compatibility">
+        <h2>Editor Compatibility Matrix</h2>
+        <table>
+          <thead>
+            <tr><th>Editor</th><th>Support Level</th><th>Mechanism</th><th>Font Family</th><th>Weight</th><th>Style</th><th>Size</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>VSCode 1.97+</td>
+              <td><span class="badge badge-full">FULL</span></td>
+              <td><code>textMateRules</code> <code>fontFamily</code></td>
+              <td>Yes</td><td>Yes</td><td>Yes</td><td>No</td>
+            </tr>
+            <tr>
+              <td>Neovim (Goneovim)</td>
+              <td><span class="badge badge-partial">PARTIAL</span></td>
+              <td>Highlight groups + font metadata</td>
+              <td>Yes</td><td>Limited</td><td>Yes</td><td>No</td>
+            </tr>
+            <tr>
+              <td>Neovim (Neovide)</td>
+              <td><span class="badge badge-partial">PARTIAL</span></td>
+              <td>Bold/italic via highlight groups</td>
+              <td>Requires patching</td><td>Bold only</td><td>Yes</td><td>No</td>
+            </tr>
+            <tr>
+              <td>Kitty terminal</td>
+              <td><span class="badge badge-partial">PARTIAL</span></td>
+              <td><code>symbol_map</code> + PUA ranges</td>
+              <td>Config-level</td><td>No</td><td>No</td><td>No</td>
+            </tr>
+            <tr>
+              <td>Terminal (generic)</td>
+              <td><span class="badge badge-limited">LIMITED</span></td>
+              <td>Bold/italic/underline only</td>
+              <td>No</td><td>Bold only</td><td>Yes</td><td>No</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="vscode">
+        <h2>VSCode</h2>
+        <p>VSCode 1.97 (December 2025) added native <code>fontFamily</code> support in <code>textMateRules</code>, which provides the cleanest integration path for per-token font styling.</p>
+
+        <h3>How it works</h3>
+        <p>Polyfont generates <code>editor.tokenColorCustomizations.textMateRules</code> entries where each rule includes:</p>
+        <ul>
+          <li><code>scope</code> -- the TextMate scope selector</li>
+          <li><code>settings.fontFamily</code> -- font family string with fallbacks</li>
+          <li><code>settings.fontWeight</code> -- CSS font weight (when not regular)</li>
+          <li><code>settings.fontStyle</code> -- font style (when not normal)</li>
+        </ul>
+
+        <h3>Setup</h3>
+        <p><strong>Option A: CLI-generated settings (recommended)</strong></p>
+<pre><code># Print to stdout
+polyfont vscode
+
+# Write to .vscode/settings.json (merges with existing)
+polyfont vscode -o .vscode/settings.json</code></pre>
+
+        <p>The generated JSON looks like:</p>
+<pre><code>{
+  "editor.tokenColorCustomizations": {
+    "textMateRules": [
+      {
+        "scope": "keyword",
+        "settings": {
+          "fontFamily": "Maple Mono",
+          "fontWeight": "bold"
+        }
+      },
+      {
+        "scope": "comment",
+        "settings": {
+          "fontFamily": "IBM Plex Mono",
+          "fontStyle": "italic"
+        }
+      }
+    ]
+  }
+}</code></pre>
+
+        <p><strong>Option B: VSCode extension</strong></p>
+<pre><code>cd editors/vscode
+npm install
+npm run build
+# Install as development extension or package as .vsix</code></pre>
+
+        <h3>Requirements</h3>
+        <ul>
+          <li>VSCode 1.97 or later</li>
+          <li>Font families must be installed on the system</li>
+          <li>The <code>editor.fontFamily</code> setting should include your default font as a baseline</li>
+        </ul>
+
+        <h3>Troubleshooting</h3>
+        <table>
+          <thead>
+            <tr><th>Problem</th><th>Solution</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Fonts not applying</td><td>Verify the font family name matches exactly what the OS reports. Use <code>polyfont check</code> to verify availability.</td></tr>
+            <tr><td>Some scopes not styled</td><td>Check that the scope in <code>.polyfont.toml</code> matches the TextMate scope used by the language grammar. Use "Developer: Inspect Editor Tokens and Scopes" from the command palette.</td></tr>
+            <tr><td>Settings not updating</td><td>Reload the VSCode window after changing <code>settings.json</code> (Ctrl+Shift+P then "Reload Window").</td></tr>
+            <tr><td>Conflicting theme rules</td><td>Polyfont rules only set font properties. If your theme sets <code>fontStyle</code>, the theme may override. Ensure no theme rules set <code>fontStyle</code> for the same scopes.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="neovim">
+        <h2>Neovim</h2>
+        <p>Neovim integration uses Tree-sitter for syntax parsing and highlight groups for font application. Font family changes require a GUI client.</p>
+
+        <h3>Plugin setup</h3>
+        <p>Using lazy.nvim:</p>
+<pre><code>{
+  "WyattAu/polyfont",
+  dir = "/path/to/polyfont/editors/neovim",
+  config = function()
+    require("polyfont").setup()
+  end,
+}</code></pre>
+
+        <h3>CLI-generated config</h3>
+<pre><code>polyfont neovim</code></pre>
+        <p>Outputs Lua code that sets highlight groups:</p>
+<pre><code>vim.o.guifont = 'Fira Code'
+
+vim.api.nvim_set_hl(0, '@keyword', { font = 'Maple Mono:bold' })
+vim.api.nvim_set_hl(0, '@comment', { font = 'IBM Plex Mono:italic' })
+vim.api.nvim_set_hl(0, '@entity_name_function', { font = 'Monaspace Argon:h:semi-bold' })</code></pre>
+
+        <h3>Tree-sitter highlight groups</h3>
+        <p>Neovim uses Tree-sitter highlight group names that map to TextMate scopes. Common mappings:</p>
+        <table>
+          <thead>
+            <tr><th>Tree-sitter Group</th><th>TextMate Scope</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>@keyword</code></td><td><code>keyword</code></td></tr>
+            <tr><td><code>@keyword.control</code></td><td><code>keyword.control</code></td></tr>
+            <tr><td><code>@comment</code></td><td><code>comment</code></td></tr>
+            <tr><td><code>@string</code></td><td><code>string</code></td></tr>
+            <tr><td><code>@function</code></td><td><code>entity.name.function</code></td></tr>
+            <tr><td><code>@type</code></td><td><code>entity.name.type</code></td></tr>
+            <tr><td><code>@variable</code></td><td><code>variable</code></td></tr>
+            <tr><td><code>@variable.parameter</code></td><td><code>variable.parameter</code></td></tr>
+            <tr><td><code>@constant</code></td><td><code>constant</code></td></tr>
+            <tr><td><code>@number</code></td><td><code>constant.numeric</code></td></tr>
+            <tr><td><code>@function.call</code></td><td><code>support.function</code></td></tr>
+            <tr><td><code>@punctuation</code></td><td><code>punctuation</code></td></tr>
+            <tr><td><code>@operator</code></td><td><code>keyword.operator</code></td></tr>
+            <tr><td><code>@tag</code></td><td><code>entity.name.tag</code></td></tr>
+            <tr><td><code>@attribute</code></td><td><code>entity.other.attribute-name</code></td></tr>
+          </tbody>
+        </table>
+
+        <h3>GUI support</h3>
+        <p>Font family assignment in Neovim highlight groups requires a GUI that supports the <code>font</code> key in <code>nvim_set_hl</code>:</p>
+        <table>
+          <thead>
+            <tr><th>GUI Client</th><th>Font Family</th><th>Bold</th><th>Italic</th><th>Notes</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Goneovim</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Best Neovim GUI for polyfont.</td></tr>
+            <tr><td>Neovide</td><td>Partial</td><td>Yes</td><td>Yes</td><td>Font family per group may require patching.</td></tr>
+            <tr><td>Neovim in terminal</td><td>No</td><td>Yes</td><td>Yes</td><td>Only bold/italic styling available.</td></tr>
+            <tr><td>NVIM-Qt</td><td>No</td><td>Yes</td><td>Yes</td><td>No per-group font family support.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="kitty">
+        <h2>Kitty Terminal</h2>
+        <p>Kitty supports mapping Unicode ranges to specific fonts via <code>symbol_map</code>. This is a config-level mechanism, not runtime.</p>
+
+        <h3>Setup</h3>
+<pre><code>polyfont kitty &gt;&gt; ~/.config/kitty/kitty.conf</code></pre>
+
+        <h3>Generated output</h3>
+        <p>The CLI generates <code>symbol_map</code> entries with comments indicating the scope mapping:</p>
+<pre><code># polyfont kitty configuration
+# Generated by polyfont-cli
+#
+# Note: Kitty uses symbol_map for unicode ranges, not TextMate scopes.
+# Adjust the unicode ranges below to match your needs.
+
+# scope: keyword -&gt; Maple Mono (weight: bold, style: normal)
+# symbol_map U+XXXX-U+YYYY Maple Mono</code></pre>
+
+        <h3>Limitations</h3>
+        <p>Kitty's <code>symbol_map</code> works with Unicode codepoint ranges, not syntax scopes. To use this effectively, you need to map fonts to specific Unicode ranges (such as Private Use Area characters, mathematical symbols, or box-drawing characters). This is not a replacement for scope-based font assignment in editors.</p>
+      </section>
+
+      <section id="limitations">
+        <h2>Known Limitations</h2>
+
+        <h3>VSCode</h3>
+        <ul>
+          <li>Font size per scope is not supported by the <code>textMateRules</code> API.</li>
+          <li>The <code>fontFamily</code> property in <code>textMateRules</code> was added in VSCode 1.97. Earlier versions will ignore it silently.</li>
+          <li>Themes that set <code>fontStyle</code> on the same scopes may conflict with Polyfont rules.</li>
+          <li>Ligatures are controlled by the base <code>editor.fontFamily</code> setting; per-token ligature control is not available.</li>
+        </ul>
+
+        <h3>Neovim</h3>
+        <ul>
+          <li>Per-token font family changes require a GUI client (Goneovim recommended). Terminal Neovim cannot change fonts per character.</li>
+          <li>Tree-sitter highlight groups do not map 1:1 to TextMate scopes. Some manual mapping is required.</li>
+          <li>Bold and italic are widely supported, but fine-grained weight control (semi-bold, light, etc.) depends on the GUI client.</li>
+          <li>The <code>font</code> key in <code>nvim_set_hl</code> is a Neovim 0.9+ feature.</li>
+        </ul>
+
+        <h3>Kitty</h3>
+        <ul>
+          <li><code>symbol_map</code> operates on Unicode codepoint ranges, not syntax scopes. Direct scope-to-font mapping is not possible.</li>
+          <li>Configuration is static; changes require restarting Kitty or reloading the config.</li>
+          <li>No font weight or style control per range.</li>
+        </ul>
+
+        <h3>General</h3>
+        <ul>
+          <li>Font availability depends on system installation. Use <code>polyfont check</code> to verify.</li>
+          <li>Mixed font rendering may cause alignment issues when fonts have different metrics (x-height, ascender, descender). Choose fonts with similar metrics for best results.</li>
+          <li>The LSP server provides basic line-level token classification; full token-level resolution requires the editor extension to provide its own tokenizer.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>Apache License 2.0 | <a href="https://github.com/WyattAu/polyfont">GitHub</a></p>
+  </footer>
+</body>
+</html>
