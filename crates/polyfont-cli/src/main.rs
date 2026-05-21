@@ -4,7 +4,9 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use polyfont_config::{ConfigLoader, PolyfontConfig};
 use polyfont_core::{FontStyle, FontWeight};
+use polyfont_fonts::{FontScanner, create_discovery};
 use polyfont_scope::ScopeResolver;
+use polyfont_themes::{ThemeExporter, ThemeRegistry};
 
 #[derive(Parser)]
 #[command(name = "polyfont")]
@@ -27,6 +29,27 @@ enum Commands {
     Neovim,
     Kitty,
     Dump,
+    Font {
+        #[command(subcommand)]
+        action: FontAction,
+    },
+    Theme {
+        #[command(subcommand)]
+        action: ThemeAction,
+    },
+}
+
+#[derive(Subcommand)]
+enum FontAction {
+    List,
+    Check { family: Vec<String> },
+}
+
+#[derive(Subcommand)]
+enum ThemeAction {
+    List,
+    Show { name: String },
+    Apply { name: String },
 }
 
 fn load_config(path: Option<&PathBuf>) -> Result<PolyfontConfig> {
@@ -389,29 +412,102 @@ fn cmd_dump(config: &PolyfontConfig) {
     }
 }
 
+fn cmd_font_list() -> Result<()> {
+    let discovery = create_discovery();
+    let families = discovery.list_families()?;
+    if families.is_empty() {
+        println!("No font families found.");
+    } else {
+        for family in &families {
+            println!("{family}");
+        }
+    }
+    Ok(())
+}
+
+fn cmd_font_check(families: &[String]) -> Result<()> {
+    let scanner = FontScanner::new();
+    for family in families {
+        if scanner.is_available(family) {
+            println!("[ok] {family}");
+        } else {
+            println!("[missing] {family}");
+        }
+    }
+    Ok(())
+}
+
+fn cmd_theme_list() {
+    let registry = ThemeRegistry;
+    let themes = registry.list_themes();
+    for theme in &themes {
+        println!("{} - {}", theme.name, theme.description);
+    }
+}
+
+fn cmd_theme_show(name: &str) -> Result<()> {
+    let registry = ThemeRegistry;
+    let theme = registry
+        .get_theme(name)
+        .with_context(|| format!("theme '{name}' not found"))?;
+    let config = ThemeExporter::export_config(&theme.config)?;
+    println!("{config}");
+    Ok(())
+}
+
+fn cmd_theme_apply(name: &str) -> Result<()> {
+    let registry = ThemeRegistry;
+    let theme = registry
+        .get_theme(name)
+        .with_context(|| format!("theme '{name}' not found"))?;
+    let config = ThemeExporter::export_config(&theme.config)?;
+    let dest = std::env::current_dir()?.join(".polyfont.toml");
+    std::fs::write(&dest, config).with_context(|| format!("failed to write {}", dest.display()))?;
+    eprintln!("Theme '{name}' written to {}", dest.display());
+    Ok(())
+}
+
 fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     let cli = Cli::parse();
-    let config = load_config(cli.config.as_ref())?;
 
     match cli.command {
         Commands::Check => {
+            let config = load_config(cli.config.as_ref())?;
             cmd_check(&config);
             Ok(())
         }
-        Commands::Vscode { output } => cmd_vscode(&config, output.as_ref()),
+        Commands::Vscode { output } => {
+            let config = load_config(cli.config.as_ref())?;
+            cmd_vscode(&config, output.as_ref())
+        }
         Commands::Neovim => {
+            let config = load_config(cli.config.as_ref())?;
             cmd_neovim(&config);
             Ok(())
         }
         Commands::Kitty => {
+            let config = load_config(cli.config.as_ref())?;
             cmd_kitty(&config);
             Ok(())
         }
         Commands::Dump => {
+            let config = load_config(cli.config.as_ref())?;
             cmd_dump(&config);
             Ok(())
         }
+        Commands::Font { action } => match action {
+            FontAction::List => cmd_font_list(),
+            FontAction::Check { family } => cmd_font_check(&family),
+        },
+        Commands::Theme { action } => match action {
+            ThemeAction::List => {
+                cmd_theme_list();
+                Ok(())
+            }
+            ThemeAction::Show { name } => cmd_theme_show(&name),
+            ThemeAction::Apply { name } => cmd_theme_apply(&name),
+        },
     }
 }

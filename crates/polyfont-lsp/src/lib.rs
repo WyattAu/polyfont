@@ -1,10 +1,11 @@
 #![allow(clippy::multiple_crate_versions)]
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use polyfont_config::{ConfigLoader, PolyfontConfig};
 use polyfont_core::{PolyfontEngine, ScopeMatchEngine, TokenInfo};
+use polyfont_parse::{OffsetEncoding, TokenParser};
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use tower_lsp::jsonrpc::Result as LspResult;
@@ -247,8 +248,62 @@ struct FontAssignmentsRequestParams {
     uri: String,
 }
 
+static TOKEN_PARSER: LazyLock<TokenParser> = LazyLock::new(TokenParser::new);
+
+fn language_id_from_uri(uri: &str) -> &str {
+    let path = uri.split('/').next_back().unwrap_or(uri);
+    match path.split('.').next_back().unwrap_or("") {
+        "rs" => "rust",
+        "ts" => "typescript",
+        "tsx" => "typescript",
+        "js" => "javascript",
+        "jsx" => "javascript",
+        "py" => "python",
+        "go" => "go",
+        "c" => "c",
+        "cpp" | "cc" | "cxx" | "h" | "hpp" => "cpp",
+        "json" => "json",
+        "toml" => "toml",
+        "lua" => "lua",
+        _ => "unknown",
+    }
+}
+
+fn tokenize_document(text: &str, uri: &str) -> Vec<polyfont_core::TokenInfo> {
+    let lang = language_id_from_uri(uri);
+
+    match TOKEN_PARSER.parse_tokens(text, lang, OffsetEncoding::Utf16) {
+        Ok(tokens) if !tokens.is_empty() => {
+            info!(
+                language = lang,
+                method = "tree-sitter",
+                "tokenized document"
+            );
+            tokens
+        }
+        Ok(_) => {
+            info!(
+                language = lang,
+                method = "naive",
+                reason = "tree-sitter returned no tokens",
+                "tokenized document"
+            );
+            tokenize_document_naive(text)
+        }
+        Err(e) => {
+            info!(
+                language = lang,
+                method = "naive",
+                reason = %e,
+                "tokenized document"
+            );
+            tokenize_document_naive(text)
+        }
+    }
+}
+
 #[allow(clippy::cast_possible_truncation)]
-fn tokenize_document(text: &str, _uri: &str) -> Vec<polyfont_core::TokenInfo> {
+fn tokenize_document_naive(text: &str) -> Vec<polyfont_core::TokenInfo> {
     let mut tokens = Vec::new();
     for (line_idx, line) in text.lines().enumerate() {
         let leading = line.len() - line.trim_start().len();

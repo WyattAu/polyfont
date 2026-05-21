@@ -12,6 +12,7 @@ categories = ["text-editors", "development-tools"]
 [dependencies]
 polyfont-core = { path = "../polyfont-core" }
 polyfont-config = { path = "../polyfont-config" }
+polyfont-parse = { path = "../polyfont-parse" }
 tower-lsp = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
