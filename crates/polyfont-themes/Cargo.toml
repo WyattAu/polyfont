@@ -1,0 +1,19 @@
+[package]
+name = "polyfont-themes"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+keywords = ["font", "theme", "syntax-highlighting", "textmate"]
+categories = ["text-editors", "development-tools"]
+description = "Theme import, export, and registry for polyfont"
+
+[dependencies]
+polyfont-core = { path = "../polyfont-core" }
+polyfont-config = { path = "../polyfont-config" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
