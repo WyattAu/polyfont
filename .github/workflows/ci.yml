@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -23,6 +24,19 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
 
+  semver:
+    name: SemVer Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-semver-checks
+        run: cargo install cargo-semver-checks --locked
+      - name: Check for breaking changes
+        run: cargo semver-checks --baseline-rev origin/main
+
   test:
     name: Test (${{ matrix.os }}, ${{ matrix.rust }})
     needs: check
@@ -40,6 +54,17 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --workspace
 
+  docs:
+    name: Docs
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo doc --workspace --no-deps
+      - run: cargo doc --workspace --no-deps --document-private-items
+
   vscode-extension:
     name: VSCode Extension
     runs-on: ubuntu-latest
@@ -56,24 +81,86 @@ jobs:
       - run: npx tsc --noEmit
 
   release:
-    name: Release
-    needs: [check, test, vscode-extension]
+    name: Release (${{ matrix.target }})
+    needs: [check, test, docs, vscode-extension]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            artifact_name: polyfont
+            lsp_name: polyfont-lsp
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            artifact_name: polyfont
+            lsp_name: polyfont-lsp
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            artifact_name: polyfont
+            lsp_name: polyfont-lsp
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            artifact_name: polyfont
+            lsp_name: polyfont-lsp
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            artifact_name: polyfont.exe
+            lsp_name: polyfont-lsp.exe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cross-compilation tools
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+      - name: Build CLI
+        run: cargo build --release -p polyfont-cli --target ${{ matrix.target }}
+      - name: Build LSP
+        run: cargo build --release -p polyfont-lsp --target ${{ matrix.target }}
+      - name: Generate checksums
+        run: |
+          cd target/${{ matrix.target }}/release
+          sha256sum ${{ matrix.artifact_name }} > polyfont-${{ matrix.target }}.sha256
+          sha256sum ${{ matrix.lsp_name }} > polyfont-lsp-${{ matrix.target }}.sha256
+        shell: bash
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: polyfont-cli-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
+      - name: Upload LSP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: polyfont-lsp-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/${{ matrix.lsp_name }}
+      - name: Upload CLI checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: polyfont-cli-${{ matrix.target }}-sha256
+          path: target/${{ matrix.target }}/release/polyfont-${{ matrix.target }}.sha256
+      - name: Upload LSP checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: polyfont-lsp-${{ matrix.target }}-sha256
+          path: target/${{ matrix.target }}/release/polyfont-lsp-${{ matrix.target }}.sha256
+
+  github-release:
+    name: GitHub Release
+    needs: release
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Build release binaries
-        run: |
-          cargo build --release -p polyfont-cli
-          cargo build --release -p polyfont-lsp
-      - name: Upload CLI artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          name: polyfont-cli-linux-x64
-          path: target/release/polyfont
-      - name: Upload LSP artifact
-        uses: actions/upload-artifact@v4
+          path: artifacts
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: polyfont-lsp-linux-x64
-          path: target/release/polyfont-lsp
+          generate_release_notes: true
+          files: artifacts/**/*.sha256
+          draft: false
+          prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') || contains(github.ref, '-alpha') }}
