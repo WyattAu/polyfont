@@ -12,12 +12,13 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.8.0"
 edition = "2024"
 license = "Apache-2.0"
 repository = "https://github.com/WyattAu/polyfont"
 rust-version = "1.85"
 description = "Per-token font highlighting for code editors"
+documentation = "https://docs.rs/polyfont-core"
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }

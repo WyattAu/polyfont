@@ -3,7 +3,7 @@
 Per-token font highlighting for code editors. This document tracks milestones from the
 current v0.1.0 prototype through v1.0 and beyond.
 
-**Current version:** 0.1.0 (2026-05-20)
+**Current version:** 0.8.0 (2026-05-21)
 **Repository:** https://github.com/WyattAu/polyfont
 **License:** Apache-2.0
 
@@ -13,14 +13,20 @@ current v0.1.0 prototype through v1.0 and beyond.
 
 ```
 crates/
-  polyfont-core/     # TokenInfo, FontSpec, FontRule, ScopeMatchEngine
+  polyfont-core/     # TokenInfo, FontSpec, FontRule, ScopeMatchEngine, benchmarks
   polyfont-config/   # TOML config loading, PolyfontConfig, ConfigLoader
-  polyfont-scope/    # ScopePattern, ScopeSelector, ScopeResolver, ScopeTree
-  polyfont-lsp/      # tower-lsp server, naive line-prefix tokenizer
-  polyfont-cli/      # check, vscode, neovim, kitty, dump subcommands
+  polyfont-scope/    # ScopePattern, ScopeSelector, ScopeResolver, TrieScopeResolver, ScopeTree
+  polyfont-lsp/      # tower-lsp server, tree-sitter-first tokenizer, naive fallback
+  polyfont-cli/      # check, vscode, neovim, kitty, dump, font, theme subcommands
+  polyfont-parse/    # Tree-sitter token parser, 10 language grammars, naive fallback
+  polyfont-fonts/    # Cross-platform font discovery (Linux/macOS/Windows/Fallback)
+  polyfont-themes/   # Theme import/export, 5 built-in themes, ThemeRegistry
 editors/
   vscode/            # VSCode extension (textMateRules fontFamily API)
-  neovim/            # Lua plugin with nvim-treesitter integration
+  neovim/            # Lua plugin with nvim-treesitter, font metadata for GUIs
+  zed/               # Integration guide for Zed editor
+  helix/             # Integration guide for Helix (Kitty symbol_map approximation)
+  sublime/           # Integration guide for Sublime Text
 ```
 
 ---
@@ -744,3 +750,8 @@ date. Entries are added as decisions are made.
 | 2026-05-20 | TOML for config format | Human-readable, native Rust support, popular in Rust ecosystem |
 | 2026-05-20 | TextMate scopes for token classification | Universal syntax highlighting standard, supported by all target editors |
 | 2026-05-20 | Per-crate workspace layout | Clean separation of concerns, independent publishable units |
+| 2026-05-21 | Feature-gated tree-sitter grammars | Avoids heavy C dependencies for users who don't need parsing |
+| 2026-05-21 | std::process::Command for font discovery | No FFI, simple cross-platform shell invocation of fc-list/system_profiler/PowerShell |
+| 2026-05-21 | TrieScopeResolver for O(k) scope lookup | Scales to large rule sets without O(n) linear scan |
+| 2026-05-21 | Built-in themes with prefix-match fallback | Themes work even with incomplete scope coverage |
+| 2026-05-21 | Kitty symbol_map approximation for Helix | Terminal cannot do per-scope fonts; Unicode range mapping is the best available approximation |
