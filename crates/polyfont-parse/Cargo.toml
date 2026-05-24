@@ -10,7 +10,7 @@ categories = ["text-editors", "development-tools"]
 description = "Tree-sitter-based token parsing for polyfont"
 
 [dependencies]
-polyfont-core = { path = "../polyfont-core" }
+polyfont-core = { workspace = true }
 tree-sitter = "0.24"
 tree-sitter-highlight = "0.24"
 thiserror = { workspace = true }

@@ -10,8 +10,8 @@ categories = ["text-editors", "development-tools"]
 description = "Theme import, export, and registry for polyfont"
 
 [dependencies]
-polyfont-core = { path = "../polyfont-core" }
-polyfont-config = { path = "../polyfont-config" }
+polyfont-core = { workspace = true }
+polyfont-config = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 toml = { workspace = true }

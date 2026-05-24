@@ -10,7 +10,7 @@ keywords = ["font", "syntax-highlighting", "textmate", "editor"]
 categories = ["text-editors", "development-tools"]
 
 [dependencies]
-polyfont-core = { path = "../polyfont-core" }
+polyfont-core = { workspace = true }
 serde = { workspace = true }
 toml = { workspace = true }
 thiserror = { workspace = true }

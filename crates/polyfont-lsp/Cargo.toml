@@ -10,9 +10,9 @@ keywords = ["font", "syntax-highlighting", "textmate", "editor"]
 categories = ["text-editors", "development-tools"]
 
 [dependencies]
-polyfont-core = { path = "../polyfont-core" }
-polyfont-config = { path = "../polyfont-config" }
-polyfont-parse = { path = "../polyfont-parse" }
+polyfont-core = { workspace = true }
+polyfont-config = { workspace = true }
+polyfont-parse = { workspace = true }
 tower-lsp = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
