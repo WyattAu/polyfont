@@ -36,7 +36,11 @@
           <li><a href="#polyfont-core">polyfont-core</a></li>
           <li><a href="#polyfont-config">polyfont-config</a></li>
           <li><a href="#polyfont-scope">polyfont-scope</a></li>
+          <li><a href="#polyfont-parse">polyfont-parse</a></li>
+          <li><a href="#polyfont-fonts">polyfont-fonts</a></li>
+          <li><a href="#polyfont-themes">polyfont-themes</a></li>
           <li><a href="#polyfont-lsp">polyfont-lsp</a></li>
+          <li><a href="#polyfont-cli">polyfont-cli</a></li>
         </ul>
       </nav>
     </div>
@@ -435,6 +439,172 @@ pub const SCOPE_ATTRIBUTE:   &amp;str = "entity.other.attribute-name";</code></p
         </div>
       </section>
 
+      <section id="polyfont-parse">
+        <div class="api-section">
+          <h2>polyfont-parse</h2>
+          <p>Tree-sitter-based token parser with per-language grammars and a naive fallback for unsupported languages.</p>
+
+          <h3>TokenParser</h3>
+          <div class="type-def">
+<pre><code>pub struct TokenParser { /* private fields */ }
+
+impl TokenParser {
+    pub fn new() -&gt; Self;
+    pub fn parse_tokens(
+        &amp;self,
+        text: &amp;str,
+        language_id: &amp;str,
+        offset_encoding: OffsetEncoding,
+    ) -&gt; Result&lt;Vec&lt;TokenInfo&gt;, ParseError&gt;;
+}</code></pre>
+          </div>
+          <p>Tries tree-sitter parsing first. Falls back to naive line-prefix classification when no grammar is available for the language. Language grammars are feature-gated (e.g., <code>--features rust</code>).</p>
+
+          <h3>Supported Languages</h3>
+          <p>Feature-gated grammars: <code>rust</code>, <code>c</code>, <code>cpp</code>, <code>go</code>, <code>python</code>, <code>javascript</code>, <code>typescript</code>, <code>java</code>, <code>ruby</code>, <code>html</code>. Default features are empty -- no grammars are included unless explicitly enabled.</p>
+
+          <h3>OffsetEncoding</h3>
+          <div class="type-def">
+<pre><code>pub enum OffsetEncoding {
+    Utf8,
+    Utf16,
+}</code></pre>
+          </div>
+
+          <h3>ParseError</h3>
+          <div class="type-def">
+<pre><code>pub enum ParseError {
+    UnsupportedLanguage(String),
+    ParseFailed { language: String, message: String },
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="polyfont-fonts">
+        <div class="api-section">
+          <h2>polyfont-fonts</h2>
+          <p>Cross-platform font discovery and management. Provides a trait-based abstraction over platform-specific font enumeration APIs.</p>
+
+          <h3>FontDiscovery (trait)</h3>
+          <div class="type-def">
+<pre><code>pub trait FontDiscovery: Send + Sync {
+    fn list_families(&amp;self) -&gt; Result&lt;Vec&lt;String&gt;, FontError&gt;;
+    fn find_family(&amp;self, name: &amp;str) -&gt; Result&lt;bool, FontError&gt;;
+    fn font_path(&amp;self, name: &amp;str) -&gt; Option&lt;PathBuf&gt;;
+}</code></pre>
+          </div>
+
+          <h3>Platform Implementations</h3>
+          <table class="field-table">
+            <thead><tr><th>Struct</th><th>Platform</th><th>Method</th></tr></thead>
+            <tbody>
+              <tr><td><code>FcListDiscovery</code></td><td>Linux</td><td><code>fc-list</code> via <code>std::process::Command</code></td></tr>
+              <tr><td><code>MacOsDiscovery</code></td><td>macOS</td><td><code>system_profiler SPFontsDataType</code></td></tr>
+              <tr><td><code>WindowsDiscovery</code></td><td>Windows</td><td>PowerShell <code>Get-ChildItem</code> on font directories</td></tr>
+              <tr><td><code>FallbackDiscovery</code></td><td>All</td><td>Returns empty list</td></tr>
+            </tbody>
+          </table>
+
+          <h3>FontScanner</h3>
+          <div class="type-def">
+<pre><code>pub struct FontScanner { /* private fields */ }
+
+impl FontScanner {
+    pub fn new() -&gt; Self;
+    pub fn with_discovery(discovery: Box&lt;dyn FontDiscovery&gt;) -&gt; Self;
+    pub fn is_available(&amp;self, family: &amp;str) -&gt; bool;
+    pub fn available_families(&amp;self) -&gt; Vec&lt;String&gt;;
+    pub fn check_config(&amp;self, families: &amp;[&amp;str]) -&gt; FontCheckResult;
+}</code></pre>
+          </div>
+
+          <h3>create_discovery()</h3>
+          <p>Auto-selects the platform-appropriate discovery implementation:</p>
+          <div class="type-def">
+<pre><code>pub fn create_discovery() -&gt; Box&lt;dyn FontDiscovery&gt;;</code></pre>
+          </div>
+
+          <h3>FontCheckResult</h3>
+          <div class="type-def">
+<pre><code>pub struct FontCheckResult {
+    pub available: Vec&lt;String&gt;,
+    pub missing: Vec&lt;String&gt;,
+}</code></pre>
+          </div>
+
+          <h3>FontError</h3>
+          <div class="type-def">
+<pre><code>pub enum FontError {
+    DiscoveryFailed(String),
+    CommandFailed(String),
+    ParseError,
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="polyfont-themes">
+        <div class="api-section">
+          <h2>polyfont-themes</h2>
+          <p>Theme import, export, and registry. Supports VSCode/TextMate JSON themes and provides 5 built-in themes.</p>
+
+          <h3>ThemeImporter</h3>
+          <div class="type-def">
+<pre><code>pub struct ThemeImporter;
+
+impl ThemeImporter {
+    pub fn import_vscode(json: &amp;str) -&gt; Result&lt;PolyfontConfig, ThemeError&gt;;
+    pub fn import_textmate(json: &amp;str) -&gt; Result&lt;PolyfontConfig, ThemeError&gt;;
+}</code></pre>
+          </div>
+          <p>Imports VSCode theme JSON files. Extracts <code>fontStyle</code> from token colors and maps to <code>FontWeight</code>/<code>FontStyle</code>. Font families are assigned via a configurable mapping with prefix-match fallback.</p>
+
+          <h3>ThemeExporter</h3>
+          <div class="type-def">
+<pre><code>pub struct ThemeExporter;
+
+impl ThemeExporter {
+    pub fn export_config(config: &amp;PolyfontConfig) -&gt; Result&lt;String, ThemeError&gt;;
+    pub fn export_vscode(config: &amp;PolyfontConfig) -&gt; Result&lt;String, ThemeError&gt;;
+}</code></pre>
+          </div>
+
+          <h3>ThemeRegistry</h3>
+          <div class="type-def">
+<pre><code>pub struct ThemeRegistry;
+
+impl ThemeRegistry {
+    pub fn list() -&gt; Vec&lt;&amp;'static str&gt;;
+    pub fn get(name: &amp;str) -&gt; Option&lt;&amp;'static BuiltinTheme&gt;;
+}</code></pre>
+          </div>
+
+          <h3>Built-in Themes</h3>
+          <table class="field-table">
+            <thead><tr><th>Name</th><th>Description</th><th>Rules</th></tr></thead>
+            <tbody>
+              <tr><td><code>monaspace</code></td><td>Monaspace font family across scopes</td><td>10+</td></tr>
+              <tr><td><code>serif-mono</code></td><td>Serif for comments, mono for code</td><td>6+</td></tr>
+              <tr><td><code>weight-differentiated</code></td><td>Same family, different weights</td><td>6+</td></tr>
+              <tr><td><code>minimal</code></td><td>Only 4 scope categories</td><td>4</td></tr>
+              <tr><td><code>maximal</code></td><td>17+ distinct scope rules</td><td>17+</td></tr>
+            </tbody>
+          </table>
+
+          <h3>ThemeError</h3>
+          <div class="type-def">
+<pre><code>pub enum ThemeError {
+    InvalidJson(String),
+    MissingField(String),
+    InvalidScope(String),
+    ImportFailed(String),
+    ExportFailed(String),
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
       <section id="polyfont-lsp">
         <div class="api-section">
           <h2>polyfont-lsp</h2>
@@ -516,6 +686,45 @@ pub struct LspPosition {
 
           <h3>Configuration Reloading</h3>
           <p>The LSP server reloads the config on <code>didChangeConfiguration</code> notifications. After reloading, it re-publishes font assignments for all open documents.</p>
+        </div>
+      </section>
+
+      <section id="polyfont-cli">
+        <div class="api-section">
+          <h2>polyfont-cli</h2>
+          <p>Command-line interface for polyfont. Provides editor config generation, font checking, and theme management.</p>
+
+          <h3>Usage</h3>
+<pre><code>polyfont [OPTIONS] &lt;COMMAND&gt;
+
+Commands:
+  check              Verify font availability and config validity
+  vscode             Generate VSCode textMateRules settings
+  neovim             Generate Neovim highlight group Lua code
+  kitty              Generate Kitty symbol_map configuration
+  dump               Dump current config as JSON
+  font               Font management subcommands
+  theme              Theme management subcommands
+  help               Print help
+
+Font subcommands:
+  polyfont font list                 List all available font families
+  polyfont font check &lt;family&gt;...   Check if fonts are installed
+
+Theme subcommands:
+  polyfont theme list                List built-in themes
+  polyfont theme show &lt;name&gt;        Show theme details
+  polyfont theme apply &lt;name&gt;       Write theme to .polyfont.toml</code></pre>
+
+          <h3>Options</h3>
+          <table class="field-table">
+            <thead><tr><th>Flag</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>-c, --config &lt;path&gt;</code></td><td>Path to <code>.polyfont.toml</code> (default: auto-discover)</td></tr>
+              <tr><td><code>-o, --output &lt;path&gt;</code></td><td>Output file path (default: stdout)</td></tr>
+              <tr><td><code>-v, --verbose</code></td><td>Enable verbose logging</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
     </main>

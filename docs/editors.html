@@ -37,6 +37,9 @@
           <li><a href="#vscode">VSCode</a></li>
           <li><a href="#neovim">Neovim</a></li>
           <li><a href="#kitty">Kitty Terminal</a></li>
+          <li><a href="#zed">Zed</a></li>
+          <li><a href="#helix">Helix</a></li>
+          <li><a href="#sublime">Sublime Text</a></li>
           <li><a href="#limitations">Known Limitations</a></li>
         </ul>
       </nav>
@@ -76,6 +79,24 @@
               <td><span class="badge badge-partial">PARTIAL</span></td>
               <td><code>symbol_map</code> + PUA ranges</td>
               <td>Config-level</td><td>No</td><td>No</td><td>No</td>
+            </tr>
+            <tr>
+              <td>Zed</td>
+              <td><span class="badge badge-partial">PARTIAL</span></td>
+              <td><code>text_style_overrides</code></td>
+              <td>Yes</td><td>Yes</td><td>Yes</td><td>No</td>
+            </tr>
+            <tr>
+              <td>Helix + Kitty</td>
+              <td><span class="badge badge-limited">LIMITED</span></td>
+              <td>Kitty <code>symbol_map</code> approximation</td>
+              <td>Unicode ranges only</td><td>No</td><td>No</td><td>No</td>
+            </tr>
+            <tr>
+              <td>Sublime Text</td>
+              <td><span class="badge badge-partial">PARTIAL</span></td>
+              <td><code>.sublime-theme</code> <code>font.face</code></td>
+              <td>Yes</td><td>Yes</td><td>Yes</td><td>No</td>
             </tr>
             <tr>
               <td>Terminal (generic)</td>
@@ -240,6 +261,82 @@ vim.api.nvim_set_hl(0, '@entity_name_function', { font = 'Monaspace Argon:h:semi
 
         <h3>Limitations</h3>
         <p>Kitty's <code>symbol_map</code> works with Unicode codepoint ranges, not syntax scopes. To use this effectively, you need to map fonts to specific Unicode ranges (such as Private Use Area characters, mathematical symbols, or box-drawing characters). This is not a replacement for scope-based font assignment in editors.</p>
+      </section>
+
+      <section id="zed">
+        <h2>Zed</h2>
+        <p>Zed supports per-scope font styling through <code>text_style_overrides</code> in settings. The extension reads <code>.polyfont.toml</code> and generates the appropriate Zed theme entries.</p>
+
+        <h3>Setup</h3>
+<pre><code>polyfont zed &gt;&gt; ~/.config/zed/settings.json</code></pre>
+
+        <h3>Generated output</h3>
+<pre><code>{
+  "text_style_overrides": {
+    "keyword": {
+      "font_family": "Maple Mono",
+      "font_weight": "Bold"
+    },
+    "comment": {
+      "font_family": "IBM Plex Mono",
+      "font_italic": true
+    }
+  }
+}</code></pre>
+
+        <h3>Limitations</h3>
+        <ul>
+          <li>Zed's <code>text_style_overrides</code> may not cover all TextMate scopes.</li>
+          <li>Font family support is a relatively new Zed feature; verify with your version.</li>
+        </ul>
+      </section>
+
+      <section id="helix">
+        <h2>Helix</h2>
+        <p>Helix runs in the terminal and does not support per-token font switching natively. The integration generates Kitty <code>symbol_map</code> configuration that approximates per-scope font differentiation.</p>
+
+        <h3>Setup</h3>
+<pre><code>polyfont helix &gt;&gt; ~/.config/kitty/kitty.conf</code></pre>
+
+        <h3>Limitations</h3>
+        <ul>
+          <li>This is an approximation, not true per-scope rendering.</li>
+          <li>Same character in different scopes renders with the same font.</li>
+          <li>Requires Kitty terminal; other terminals may not support <code>symbol_map</code>.</li>
+        </ul>
+      </section>
+
+      <section id="sublime">
+        <h2>Sublime Text</h2>
+        <p>Sublime Text supports per-scope font settings via the <code>font.face</code> key in <code>.sublime-theme</code> files. The integration reads <code>.polyfont.toml</code> and generates theme override entries.</p>
+
+        <h3>Setup</h3>
+<pre><code>polyfont sublime -o ~/.config/sublime-text/Packages/User/polyfont.hidden-tmTheme</code></pre>
+
+        <h3>Generated output</h3>
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;plist version="1.0"&gt;
+&lt;dict&gt;
+  &lt;key&gt;settings&lt;/key&gt;
+  &lt;array&gt;
+    &lt;dict&gt;
+      &lt;key&gt;scope&lt;/key&gt;
+      &lt;string&gt;keyword&lt;/string&gt;
+      &lt;key&gt;settings&lt;/key&gt;
+      &lt;dict&gt;
+        &lt;key&gt;font.face&lt;/key&gt;
+        &lt;string&gt;Maple Mono Bold&lt;/string&gt;
+      &lt;/dict&gt;
+    &lt;/dict&gt;
+  &lt;/array&gt;
+&lt;/dict&gt;
+&lt;/plist&gt;</code></pre>
+
+        <h3>Limitations</h3>
+        <ul>
+          <li>Sublime Text applies theme overrides at the file level; conflicting themes may override polyfont settings.</li>
+          <li>The <code>font.face</code> key requires Sublime Text 4+.</li>
+        </ul>
       </section>
 
       <section id="limitations">

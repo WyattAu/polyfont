@@ -30,6 +30,8 @@
           <li><a href="configuration.html">Configuration</a></li>
           <li><a href="editors.html">Editor Integration</a></li>
           <li><a href="api.html">API Reference</a></li>
+          <li><a href="architecture.md">Architecture</a></li>
+          <li><a href="migration.md">Migration Guide</a></li>
         </ul>
         <h3>Links</h3>
         <ul>
@@ -69,22 +71,37 @@
 |  .polyfont.toml                                   |
 |  Config: scope -&gt; font mappings                   |
 +---------------------------+------------------------+
-                            |
-              +-------------+-------------+
-              |       polyfont-core       |
-              |   Rust library            |
-              |   Scope resolution        |
-              |   Font assignment         |
-              +--+-------------+----------+
-                 |             |          |
-    +------------+   +---------+   +------+------------+
-    |  VSCode    |   | Neovim  |   |  CLI / LSP        |
-    |  Extension |   | Plugin  |   |  polyfont check   |
-    |            |   |         |   |  polyfont vscode  |
-    | textMate   |   | Tree-   |   |  polyfont neovim  |
-    | Rules API  |   | sitter  |   |  polyfont kitty   |
-    |            |   | +extmarks|  |                    |
-    +------------+   +---------+   +-------------------+</code></pre>
+                             |
+               +-------------+-------------+
+               |       polyfont-core       |
+               |   Rust library            |
+               |   Scope resolution        |
+               |   Font assignment         |
+               +--+-------------+----------+
+                  |             |          |
+     +------------+   +---------+   +------+------------+
+     |  VSCode    |   | Neovim  |   |  CLI / LSP        |
+     |  Extension |   | Plugin  |   |  polyfont check   |
+     |            |   |         |   |  polyfont vscode  |
+     | textMate   |   | Tree-   |   |  polyfont neovim  |
+     | Rules API  |   | sitter  |   |  polyfont kitty   |
+     |            |   | +extmarks|  |  polyfont font    |
+     +------------+   +---------+   |  polyfont theme   |
+                                   +-------------------+</code></pre>
+      </section>
+
+      <section>
+        <h2>Features</h2>
+        <ul>
+          <li><strong>8 Rust crates</strong> -- core, config, scope, parse, fonts, themes, lsp, cli</li>
+          <li><strong>Tree-sitter parsing</strong> -- 10 language grammars with naive fallback</li>
+          <li><strong>Trie-based scope matching</strong> -- O(k) lookup, scales to 500+ rules</li>
+          <li><strong>Cross-platform font discovery</strong> -- Linux, macOS, Windows auto-detection</li>
+          <li><strong>5 built-in themes</strong> -- monaspace, serif-mono, weight-differentiated, minimal, maximal</li>
+          <li><strong>Theme import/export</strong> -- VSCode and TextMate JSON compatibility</li>
+          <li><strong>6 editor integrations</strong> -- VSCode, Neovim, Zed, Helix, Sublime, Kitty</li>
+          <li><strong>96 tests</strong> -- unit tests across all crates, criterion benchmarks</li>
+        </ul>
       </section>
 
       <section>
