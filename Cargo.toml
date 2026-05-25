@@ -13,7 +13,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.9.0"
+version = "0.10.0"
 edition = "2024"
 license = "Apache-2.0"
 repository = "https://github.com/WyattAu/polyfont"
@@ -22,15 +22,15 @@ description = "Per-token font highlighting for code editors"
 documentation = "https://docs.rs/polyfont-core"
 
 [workspace.dependencies]
-polyfont-core = { path = "crates/polyfont-core", version = "0.9.0" }
-polyfont-config = { path = "crates/polyfont-config", version = "0.9.0" }
-polyfont-scope = { path = "crates/polyfont-scope", version = "0.9.0" }
-polyfont-parse = { path = "crates/polyfont-parse", version = "0.9.0" }
-polyfont-fonts = { path = "crates/polyfont-fonts", version = "0.9.0" }
-polyfont-themes = { path = "crates/polyfont-themes", version = "0.9.0" }
-polyfont-lsp = { path = "crates/polyfont-lsp", version = "0.9.0" }
-polyfont-cli = { path = "crates/polyfont-cli", version = "0.9.0" }
-polyfont-render = { path = "crates/polyfont-render", version = "0.9.0" }
+polyfont-core = { path = "crates/polyfont-core", version = "0.10.0" }
+polyfont-config = { path = "crates/polyfont-config", version = "0.10.0" }
+polyfont-scope = { path = "crates/polyfont-scope", version = "0.10.0" }
+polyfont-parse = { path = "crates/polyfont-parse", version = "0.10.0" }
+polyfont-fonts = { path = "crates/polyfont-fonts", version = "0.10.0" }
+polyfont-themes = { path = "crates/polyfont-themes", version = "0.10.0" }
+polyfont-lsp = { path = "crates/polyfont-lsp", version = "0.10.0" }
+polyfont-cli = { path = "crates/polyfont-cli", version = "0.10.0" }
+polyfont-render = { path = "crates/polyfont-render", version = "0.10.0" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.8"

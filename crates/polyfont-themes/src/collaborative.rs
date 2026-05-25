@@ -111,6 +111,90 @@ impl ThemeDiscovery {
     }
 }
 
+/// A remote theme registry entry.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RemoteThemeEntry {
+    pub name: String,
+    pub author: String,
+    pub source: String,
+    #[serde(default)]
+    pub fonts: Vec<String>,
+    #[serde(default)]
+    pub scope_count: u32,
+    #[serde(default)]
+    pub description: String,
+}
+
+/// A remote theme registry index.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RemoteThemeRegistry {
+    pub themes: Vec<RemoteThemeEntry>,
+}
+
+impl RemoteThemeRegistry {
+    /// The URL of the official polyfont theme registry.
+    pub const REGISTRY_URL: &'static str =
+        "https://raw.githubusercontent.com/WyattAu/polyfont/main/themes/themes.json";
+
+    /// Create a registry from a JSON string.
+    pub fn from_json(json: &str) -> Result<Self, ThemeError> {
+        let registry: Self = serde_json::from_str(json)?;
+        Ok(registry)
+    }
+
+    /// Serialize the registry to JSON.
+    pub fn to_json(&self) -> Result<String, ThemeError> {
+        Ok(serde_json::to_string_pretty(self)?)
+    }
+
+    /// Find a theme by name (case-insensitive).
+    #[must_use]
+    pub fn find(&self, name: &str) -> Option<&RemoteThemeEntry> {
+        self.themes
+            .iter()
+            .find(|t| t.name.eq_ignore_ascii_case(name))
+    }
+
+    /// List all theme names.
+    #[must_use]
+    pub fn list_names(&self) -> Vec<&str> {
+        self.themes.iter().map(|t| t.name.as_str()).collect()
+    }
+}
+
+impl Default for RemoteThemeRegistry {
+    fn default() -> Self {
+        Self {
+            themes: vec![
+                RemoteThemeEntry {
+                    name: "monaspace-dark".to_string(),
+                    author: "polyfont".to_string(),
+                    source: "https://raw.githubusercontent.com/WyattAu/polyfont/main/themes/monaspace-dark.toml".to_string(),
+                    fonts: vec!["Monaspace Argon".to_string(), "Monaspace Neon".to_string(), "Monaspace Krypton".to_string(), "Monaspace Radon".to_string()],
+                    scope_count: 18,
+                    description: "Full Monaspace variable-font family with per-scope differentiation.".to_string(),
+                },
+                RemoteThemeEntry {
+                    name: "minimal".to_string(),
+                    author: "polyfont".to_string(),
+                    source: "https://raw.githubusercontent.com/WyattAu/polyfont/main/themes/minimal.toml".to_string(),
+                    fonts: vec!["JetBrains Mono".to_string(), "IBM Plex Mono".to_string()],
+                    scope_count: 4,
+                    description: "Two-font setup: JetBrains Mono for code, IBM Plex Mono for comments.".to_string(),
+                },
+                RemoteThemeEntry {
+                    name: "serif-mono".to_string(),
+                    author: "polyfont".to_string(),
+                    source: "https://raw.githubusercontent.com/WyattAu/polyfont/main/themes/serif-mono.toml".to_string(),
+                    fonts: vec!["JetBrains Mono".to_string(), "Source Serif Pro".to_string()],
+                    scope_count: 8,
+                    description: "Monospace for code, serif for comments and documentation.".to_string(),
+                },
+            ],
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use polyfont_config::{DefaultFontConfig, FontConfig, RuleConfig};
@@ -209,5 +293,22 @@ mod tests {
         let content = std::fs::read_to_string(&result).unwrap();
         let parsed: PolyfontConfig = toml::from_str(&content).unwrap();
         assert_eq!(parsed.version, 1);
+    }
+
+    #[test]
+    fn test_remote_registry_default() {
+        let registry = RemoteThemeRegistry::default();
+        assert!(!registry.themes.is_empty());
+        assert!(registry.find("monaspace-dark").is_some());
+        assert!(registry.find("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_remote_registry_roundtrip() {
+        let registry = RemoteThemeRegistry::default();
+        let json = registry.to_json().unwrap();
+        let parsed = RemoteThemeRegistry::from_json(&json).unwrap();
+        assert_eq!(parsed.themes.len(), registry.themes.len());
+        assert_eq!(parsed.list_names(), registry.list_names());
     }
 }

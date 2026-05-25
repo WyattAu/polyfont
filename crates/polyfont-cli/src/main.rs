@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
@@ -42,14 +42,51 @@ enum Commands {
 #[derive(Subcommand)]
 enum FontAction {
     List,
-    Check { family: Vec<String> },
+    Check {
+        family: Vec<String>,
+    },
+    /// Download and install a font from a known source.
+    Install {
+        family: Vec<String>,
+    },
+    /// Show a preview of a font family as SVG.
+    Preview {
+        family: String,
+        #[arg(
+            short,
+            long,
+            default_value = "The quick brown fox jumps over the lazy dog. 0123456789 {}[]()"
+        )]
+        text: String,
+    },
 }
 
 #[derive(Subcommand)]
 enum ThemeAction {
     List,
-    Show { name: String },
-    Apply { name: String },
+    Show {
+        name: String,
+    },
+    Apply {
+        name: String,
+    },
+    /// Import a VSCode JSON or TextMate .tmTheme file.
+    Import {
+        /// Path to the theme file (.json or .tmTheme).
+        path: PathBuf,
+        /// Font mapping TOML file (optional, uses defaults).
+        #[arg(short, long)]
+        mapping: Option<PathBuf>,
+    },
+    /// Export current config as a theme file.
+    Export {
+        /// Output format: toml or vscode.
+        #[arg(short, long, default_value = "toml")]
+        format: String,
+        /// Output file path (stdout if omitted).
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+    },
 }
 
 fn load_config(path: Option<&PathBuf>) -> Result<PolyfontConfig> {
@@ -105,56 +142,6 @@ fn font_family_with_fallbacks(family: &str, fallbacks: &[String]) -> String {
     parts.join(", ")
 }
 
-fn font_directories() -> Vec<PathBuf> {
-    let home = std::env::var("HOME").unwrap_or_default();
-    let mut dirs: Vec<PathBuf> = vec![
-        PathBuf::from("/usr/share/fonts"),
-        PathBuf::from("/usr/local/share/fonts"),
-    ];
-    if !home.is_empty() {
-        dirs.push(PathBuf::from(format!("{home}/.local/share/fonts")));
-        dirs.push(PathBuf::from(format!("{home}/.fonts")));
-        dirs.push(PathBuf::from(format!("{home}/Library/Fonts")));
-    }
-    dirs
-}
-
-fn scan_for_font(dir: &Path, family_lower: &str, family_nospace: &str, depth: usize) -> bool {
-    if depth > 4 {
-        return false;
-    }
-    let Ok(entries) = std::fs::read_dir(dir) else {
-        return false;
-    };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.is_file() {
-            let name = path
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .to_lowercase();
-            if name.contains(family_lower) || name.contains(family_nospace) {
-                return true;
-            }
-        } else if path.is_dir() && scan_for_font(&path, family_lower, family_nospace, depth + 1) {
-            return true;
-        }
-    }
-    false
-}
-
-fn check_font_available(family: &str) -> bool {
-    let family_lower = family.to_lowercase();
-    let family_nospace = family_lower.replace(' ', "");
-    for dir in &font_directories() {
-        if scan_for_font(dir, &family_lower, &family_nospace, 0) {
-            return true;
-        }
-    }
-    false
-}
-
 fn cmd_check(config: &PolyfontConfig) {
     println!("Config version: {}", config.version);
 
@@ -195,12 +182,13 @@ fn cmd_check(config: &PolyfontConfig) {
     all_families.dedup();
 
     println!("\nFont availability:");
+    let scanner = FontScanner::new();
     let mut missing = Vec::new();
     for family in &all_families {
-        if check_font_available(family) {
+        if scanner.is_available(family) {
             println!("  [ok] {family}");
         } else {
-            println!("  [missing] {family} (not found in system font directories)");
+            println!("  [missing] {family} (install with: polyfont font install \"{family}\")");
             missing.push(family.clone());
         }
     }
@@ -467,6 +455,119 @@ fn cmd_theme_apply(name: &str) -> Result<()> {
     Ok(())
 }
 
+fn cmd_font_install(families: &[String]) -> Result<()> {
+    use polyfont_fonts::download::FontDownloader;
+    let downloader = FontDownloader::new();
+    let known = FontDownloader::list_available_sources();
+
+    for family in families {
+        let source_info = known.iter().find(|s| {
+            s.name.eq_ignore_ascii_case(family)
+                || s.name
+                    .replace(' ', "")
+                    .eq_ignore_ascii_case(&family.replace(' ', ""))
+        });
+
+        let Some(info) = source_info else {
+            eprintln!(
+                "[skip] {family} -- not in known sources. Known: {}",
+                known
+                    .iter()
+                    .map(|s| s.name.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+            continue;
+        };
+
+        println!("Downloading {} (license: {})...", info.name, info.license);
+        match downloader.download_to_cache(&info.name, info.source.clone()) {
+            Ok(path) => println!("  [ok] cached at {}", path.display()),
+            Err(e) => eprintln!("  [error] {e}"),
+        }
+    }
+    Ok(())
+}
+
+fn cmd_font_preview(family: &str, text: &str) -> Result<()> {
+    let escaped = text
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;");
+    let width = text.len() as u32 * 9;
+    let height = 30u32;
+
+    let svg = [
+        r#"<?xml version="1.0" encoding="UTF-8"?>"#,
+        &format!(
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{width}\" height=\"{height}\" viewBox=\"0 0 {width} {height}\">"
+        ),
+        "<rect width=\"100%\" height=\"100%\" fill=\"#1e1e2e\"/>",
+        &format!("<text x=\"4\" y=\"20\" font-family=\"{family}, monospace\" font-size=\"14\" fill=\"#cdd6f4\">{escaped}</text>"),
+        "</svg>",
+    ]
+    .join("\n");
+
+    println!("{svg}");
+    Ok(())
+}
+
+fn cmd_theme_import(path: &PathBuf, mapping_path: Option<&PathBuf>) -> Result<()> {
+    let content = std::fs::read_to_string(path)
+        .with_context(|| format!("failed to read {}", path.display()))?;
+
+    let font_mapping = if let Some(mp) = mapping_path {
+        let mapping_content = std::fs::read_to_string(mp)
+            .with_context(|| format!("failed to read mapping {}", mp.display()))?;
+        toml::from_str::<polyfont_themes::FontMapping>(&mapping_content)
+            .context("failed to parse font mapping TOML")?
+    } else {
+        polyfont_themes::FontMapping::default()
+    };
+
+    let importer = polyfont_themes::ThemeImporter;
+    let config = if path.extension().is_some_and(|e| e == "json") {
+        importer
+            .import_vscode_theme(&content, &font_mapping)
+            .context("failed to import VSCode theme")?
+    } else {
+        importer
+            .import_textmate_theme(&content, &font_mapping)
+            .context("failed to import TextMate theme")?
+    };
+
+    let output = ThemeExporter::export_config(&config)?;
+    let dest = std::env::current_dir()?.join(".polyfont.toml");
+    std::fs::write(&dest, &output).with_context(|| "failed to write .polyfont.toml")?;
+    eprintln!(
+        "Imported {} rules from {} -> .polyfont.toml",
+        config.rules.len(),
+        path.display()
+    );
+    Ok(())
+}
+
+fn cmd_theme_export(config: &PolyfontConfig, format: &str, output: Option<&PathBuf>) -> Result<()> {
+    let content = match format {
+        "vscode" | "json" => ThemeExporter::export_vscode(config)?,
+        _ => ThemeExporter::export_config(config)?,
+    };
+
+    match output {
+        Some(path) => {
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent)
+                    .with_context(|| format!("failed to create directory {}", parent.display()))?;
+            }
+            std::fs::write(path, &content)
+                .with_context(|| format!("failed to write {}", path.display()))?;
+            eprintln!("Exported to {}", path.display());
+        }
+        None => println!("{content}"),
+    }
+    Ok(())
+}
+
 fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
@@ -500,6 +601,8 @@ fn main() -> Result<()> {
         Commands::Font { action } => match action {
             FontAction::List => cmd_font_list(),
             FontAction::Check { family } => cmd_font_check(&family),
+            FontAction::Install { family } => cmd_font_install(&family),
+            FontAction::Preview { family, text } => cmd_font_preview(&family, &text),
         },
         Commands::Theme { action } => match action {
             ThemeAction::List => {
@@ -508,6 +611,11 @@ fn main() -> Result<()> {
             }
             ThemeAction::Show { name } => cmd_theme_show(&name),
             ThemeAction::Apply { name } => cmd_theme_apply(&name),
+            ThemeAction::Import { path, mapping } => cmd_theme_import(&path, mapping.as_ref()),
+            ThemeAction::Export { format, output } => {
+                let config = load_config(cli.config.as_ref())?;
+                cmd_theme_export(&config, &format, output.as_ref())
+            }
         },
     }
 }

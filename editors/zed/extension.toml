@@ -1,0 +1,7 @@
+id = "polyfont"
+name = "Polyfont"
+version = "0.1.0"
+schema_version = 1
+description = "Per-scope font family assignment for Zed. Reads .polyfont.toml from the workspace and generates Zed theme overrides with text_style_overrides."
+authors = ["WyattAu"]
+repository = "https://github.com/WyattAu/polyfont"

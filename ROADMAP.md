@@ -3,7 +3,7 @@
 Per-token font highlighting for code editors. This document tracks milestones from the
 current v0.1.0 prototype through v1.0 and beyond.
 
-**Current version:** 0.8.0 (2026-05-21)
+**Current version:** 0.10.0 (2026-05-25)
 **Repository:** https://github.com/WyattAu/polyfont
 **License:** Apache-2.0
 
@@ -19,14 +19,16 @@ crates/
   polyfont-lsp/      # tower-lsp server, tree-sitter-first tokenizer, naive fallback
   polyfont-cli/      # check, vscode, neovim, kitty, dump, font, theme subcommands
   polyfont-parse/    # Tree-sitter token parser, 10 language grammars, naive fallback
-  polyfont-fonts/    # Cross-platform font discovery (Linux/macOS/Windows/Fallback)
-  polyfont-themes/   # Theme import/export, 5 built-in themes, ThemeRegistry
+  polyfont-fonts/    # Cross-platform font discovery, download, caching (Linux/macOS/Windows)
+  polyfont-themes/   # Theme import/export, 5 built-in themes, accessibility, collaborative
+  polyfont-render/   # Custom multi-font rendering engine skeleton (GPU + software paths)
 editors/
   vscode/            # VSCode extension (textMateRules fontFamily API)
   neovim/            # Lua plugin with nvim-treesitter, font metadata for GUIs
-  zed/               # Integration guide for Zed editor
+  zed/               # Zed extension (Wasm-based, text_style_overrides)
   helix/             # Integration guide for Helix (Kitty symbol_map approximation)
-  sublime/           # Integration guide for Sublime Text
+  sublime/           # Sublime Text Python plugin (.sublime-theme generation)
+  jetbrains/         # JetBrains IntelliJ plugin skeleton (Kotlin)
 ```
 
 ---

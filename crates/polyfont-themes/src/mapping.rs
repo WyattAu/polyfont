@@ -12,6 +12,12 @@ pub struct FontMapping {
     pub default_family: Option<String>,
 }
 
+impl Default for FontMapping {
+    fn default() -> Self {
+        Self::default_mapping()
+    }
+}
+
 impl FontMapping {
     #[must_use]
     pub fn default_mapping() -> Self {

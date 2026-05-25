@@ -4,6 +4,26 @@ All notable changes to the polyfont project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.10.0] - 2026-05-25
+
+### Added
+
+- **`font install` CLI subcommand**: Downloads fonts from known sources (6 registries) via `FontDownloader`. Wiring to existing download backend with `polyfont-fonts/download` feature.
+- **`font preview` CLI subcommand**: Generates SVG preview of a font family with custom text.
+- **`theme import` CLI subcommand**: Imports VSCode JSON or TextMate `.tmTheme` files into `.polyfont.toml` with optional font mapping file.
+- **`theme export` CLI subcommand**: Exports current config as TOML or VSCode JSON format.
+- **Remote theme registry**: `RemoteThemeRegistry` with JSON index, `find()`, `list_names()`, `from_json()`, `to_json()`. Default includes 3 themes (monaspace-dark, minimal, serif-mono).
+- **Zed extension skeleton** (`editors/zed/`): `extension.toml` manifest and `src/lib.rs` with `zed::register_extension!`.
+- **Sublime Text plugin** (`editors/sublime/polyfont.py`): `PolyfontApplyCommand` reads `.polyfont.toml`, generates `.sublime-theme` with per-scope font settings. `PolyfontGenerateCommand` creates sample config.
+- **`polyfont check` uses `FontScanner`**: Replaced manual directory scanning with `polyfont-fonts::FontScanner`. Suggests `polyfont font install` for missing fonts.
+
+### Changed
+
+- Removed old `font_directories()`, `scan_for_font()`, `check_font_available()` functions from CLI (replaced by `FontScanner`).
+- CLI now depends on `polyfont-fonts` with `download` feature enabled.
+- `FontMapping` now implements `Default` trait.
+- Total tests: 120 (up from 117).
+
 ## [0.9.0] - 2026-05-25
 
 ### Added

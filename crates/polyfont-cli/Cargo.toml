@@ -17,10 +17,15 @@ path = "src/main.rs"
 polyfont-core = { workspace = true }
 polyfont-config = { workspace = true }
 polyfont-scope = { workspace = true }
-polyfont-fonts = { workspace = true }
+polyfont-fonts = { workspace = true, features = ["download"] }
 polyfont-themes = { workspace = true }
 clap = { workspace = true }
 serde_json = { workspace = true }
+toml = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 anyhow = { workspace = true }
+
+[features]
+default = []
+download = ["polyfont-fonts/download"]

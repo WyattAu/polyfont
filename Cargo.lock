@@ -2267,7 +2267,7 @@ dependencies = [
 
 [[package]]
 name = "polyfont-cli"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -2277,13 +2277,14 @@ dependencies = [
  "polyfont-scope",
  "polyfont-themes",
  "serde_json",
+ "toml",
  "tracing",
  "tracing-subscriber",
 ]
 
 [[package]]
 name = "polyfont-config"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "polyfont-core",
  "serde",
@@ -2295,7 +2296,7 @@ dependencies = [
 
 [[package]]
 name = "polyfont-core"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "criterion",
  "serde",
@@ -2304,7 +2305,7 @@ dependencies = [
 
 [[package]]
 name = "polyfont-fonts"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "reqwest",
  "sha2",
@@ -2316,7 +2317,7 @@ dependencies = [
 
 [[package]]
 name = "polyfont-lsp"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "polyfont-config",
  "polyfont-core",
@@ -2331,7 +2332,7 @@ dependencies = [
 
 [[package]]
 name = "polyfont-parse"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "polyfont-core",
  "thiserror 2.0.18",
@@ -2351,7 +2352,7 @@ dependencies = [
 
 [[package]]
 name = "polyfont-render"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "cosmic-text",
  "fontdb 0.18.0",
@@ -2366,7 +2367,7 @@ dependencies = [
 
 [[package]]
 name = "polyfont-scope"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "polyfont-core",
  "thiserror 2.0.18",
@@ -2375,7 +2376,7 @@ dependencies = [
 
 [[package]]
 name = "polyfont-themes"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "polyfont-config",
  "polyfont-core",
