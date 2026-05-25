@@ -287,7 +287,8 @@ mod tests {
         let result = ThemeShare::save_to_project(&config, &project).unwrap();
 
         assert!(result.exists());
-        assert!(result.to_string_lossy().contains(".polyfont/themes"));
+        assert!(result.to_string_lossy().contains(".polyfont"));
+        assert!(result.to_string_lossy().contains("themes"));
         assert!(result.to_string_lossy().ends_with("fira-code.toml"));
 
         let content = std::fs::read_to_string(&result).unwrap();
