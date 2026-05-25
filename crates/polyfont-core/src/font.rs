@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -50,6 +52,76 @@ impl std::fmt::Display for FontStyle {
     }
 }
 
+/// Named variable font axes for common controls.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NamedAxis {
+    Weight,
+    Width,
+    Slant,
+    OpticalSize,
+    Italic,
+}
+
+impl NamedAxis {
+    /// Returns the 4-character OpenType axis tag.
+    #[must_use]
+    pub fn tag(&self) -> &'static str {
+        match self {
+            Self::Weight => "wght",
+            Self::Width => "wdth",
+            Self::Slant => "slnt",
+            Self::OpticalSize => "opsz",
+            Self::Italic => "ital",
+        }
+    }
+}
+
+impl std::fmt::Display for NamedAxis {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Weight => write!(f, "weight"),
+            Self::Width => write!(f, "width"),
+            Self::Slant => write!(f, "slant"),
+            Self::OpticalSize => write!(f, "optical-size"),
+            Self::Italic => write!(f, "italic"),
+        }
+    }
+}
+
+/// A variable font axis value, either named or custom.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum AxisValue {
+    Named { axis: NamedAxis, value: f32 },
+    Custom { tag: String, value: f32 },
+}
+
+impl AxisValue {
+    /// Returns the axis tag (4 chars for OpenType, or custom string).
+    #[must_use]
+    pub fn tag(&self) -> &str {
+        match self {
+            Self::Named { axis, .. } => axis.tag(),
+            Self::Custom { tag, .. } => tag,
+        }
+    }
+
+    /// Returns the axis value.
+    #[must_use]
+    pub fn value(&self) -> f32 {
+        match self {
+            Self::Named { value, .. } | Self::Custom { value, .. } => *value,
+        }
+    }
+
+    /// Formats as CSS `font-variation-settings` value (e.g., `"wght" 650`).
+    #[must_use]
+    pub fn to_css(&self) -> String {
+        format!("\"{}\" {}", self.tag(), self.value())
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FontSpec {
     pub family: String,
@@ -61,6 +133,9 @@ pub struct FontSpec {
     pub style: FontStyle,
     #[serde(default)]
     pub size: Option<f32>,
+    /// Variable font axis overrides. Keys are axis tags or named axes.
+    #[serde(default)]
+    pub axes: Vec<AxisValue>,
 }
 
 impl FontSpec {
@@ -72,7 +147,27 @@ impl FontSpec {
             weight: FontWeight::default(),
             style: FontStyle::default(),
             size: None,
+            axes: vec![],
         }
+    }
+
+    /// Returns CSS `font-variation-settings` string for all axes, or empty if none.
+    #[must_use]
+    pub fn css_variation_settings(&self) -> String {
+        if self.axes.is_empty() {
+            return String::new();
+        }
+        let parts: Vec<String> = self.axes.iter().map(AxisValue::to_css).collect();
+        parts.join(", ")
+    }
+
+    /// Returns a map from axis tag to value for programmatic access.
+    #[must_use]
+    pub fn axes_map(&self) -> BTreeMap<String, f32> {
+        self.axes
+            .iter()
+            .map(|a| (a.tag().to_string(), a.value()))
+            .collect()
     }
 }
 
@@ -136,6 +231,78 @@ mod tests {
         assert_eq!(spec.weight, FontWeight::Regular);
         assert_eq!(spec.style, FontStyle::Normal);
         assert!(spec.size.is_none());
+        assert!(spec.axes.is_empty());
+    }
+
+    #[test]
+    fn test_named_axis_tags() {
+        assert_eq!(NamedAxis::Weight.tag(), "wght");
+        assert_eq!(NamedAxis::Width.tag(), "wdth");
+        assert_eq!(NamedAxis::Slant.tag(), "slnt");
+        assert_eq!(NamedAxis::OpticalSize.tag(), "opsz");
+        assert_eq!(NamedAxis::Italic.tag(), "ital");
+    }
+
+    #[test]
+    fn test_axis_value_named() {
+        let av = AxisValue::Named {
+            axis: NamedAxis::Weight,
+            value: 650.0,
+        };
+        assert_eq!(av.tag(), "wght");
+        assert!((av.value() - 650.0).abs() < f32::EPSILON);
+        assert_eq!(av.to_css(), "\"wght\" 650");
+    }
+
+    #[test]
+    fn test_axis_value_custom() {
+        let av = AxisValue::Custom {
+            tag: "CASL".to_string(),
+            value: 0.5,
+        };
+        assert_eq!(av.tag(), "CASL");
+        assert!((av.value() - 0.5).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_css_variation_settings() {
+        let spec = FontSpec {
+            family: "Test".to_string(),
+            fallbacks: vec![],
+            weight: FontWeight::Regular,
+            style: FontStyle::Normal,
+            size: None,
+            axes: vec![
+                AxisValue::Named {
+                    axis: NamedAxis::Weight,
+                    value: 450.0,
+                },
+                AxisValue::Custom {
+                    tag: "CASL".to_string(),
+                    value: 1.0,
+                },
+            ],
+        };
+        let css = spec.css_variation_settings();
+        assert_eq!(css, "\"wght\" 450, \"CASL\" 1");
+    }
+
+    #[test]
+    fn test_axes_map() {
+        let spec = FontSpec {
+            family: "Test".to_string(),
+            fallbacks: vec![],
+            weight: FontWeight::Regular,
+            style: FontStyle::Normal,
+            size: None,
+            axes: vec![AxisValue::Named {
+                axis: NamedAxis::Width,
+                value: 75.0,
+            }],
+        };
+        let map = spec.axes_map();
+        assert_eq!(map.len(), 1);
+        assert!((map.get("wdth").copied().unwrap() - 75.0).abs() < f32::EPSILON);
     }
 
     #[test]

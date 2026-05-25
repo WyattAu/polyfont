@@ -19,4 +19,10 @@ pub enum ThemeError {
 
     #[error("unknown theme: {0}")]
     UnknownTheme(String),
+
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("download feature not enabled")]
+    DownloadDisabled,
 }

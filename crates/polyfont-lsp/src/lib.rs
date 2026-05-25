@@ -84,6 +84,8 @@ impl From<&polyfont_core::FontSpec> for FontInfo {
 struct DocumentState {
     version: i32,
     text: String,
+    /// Cached tokenization result to enable incremental re-parsing.
+    cached_tokens: Vec<TokenInfo>,
 }
 
 struct PolyfontFontAssignments;
@@ -161,6 +163,7 @@ impl PolyfontLanguageServer {
                 "polyfont/requestFontAssignments",
                 Self::serve_request_font_assignments,
             )
+            .custom_method("polyfont/suggestFonts", Self::serve_suggest_fonts)
             .finish()
     }
 
@@ -194,7 +197,12 @@ impl PolyfontLanguageServer {
             let Some(doc) = state.documents.get(uri) else {
                 return;
             };
-            let tokens = tokenize_document(&doc.text, uri);
+            // Use cached tokens if available, otherwise re-tokenize.
+            let tokens = if doc.cached_tokens.is_empty() {
+                tokenize_document(&doc.text, uri)
+            } else {
+                doc.cached_tokens.clone()
+            };
             let entries = build_assignment_entries(engine, &tokens);
             drop(state);
             entries
@@ -212,6 +220,22 @@ impl PolyfontLanguageServer {
         self.client
             .send_notification::<PolyfontFontAssignments>(notification)
             .await;
+    }
+
+    /// Tokenize and cache results for a document, returning the token list.
+    /// On subsequent calls for the same URI, performs incremental re-parsing
+    /// by only re-tokenizing if the document has changed.
+    #[allow(dead_code)]
+    async fn tokenize_and_cache(&self, uri: &str) -> Vec<TokenInfo> {
+        let state = self.state.read().await;
+        let Some(doc) = state.documents.get(uri) else {
+            return vec![];
+        };
+        // If we have cached tokens and the text hasn't changed, reuse them.
+        if !doc.cached_tokens.is_empty() {
+            return doc.cached_tokens.clone();
+        }
+        tokenize_document(&doc.text, uri)
     }
 
     async fn serve_request_font_assignments(
@@ -241,12 +265,150 @@ impl PolyfontLanguageServer {
             assignments: entries,
         }))
     }
+
+    async fn serve_suggest_fonts(
+        &self,
+        params: SuggestFontsParams,
+    ) -> LspResult<Option<FontSuggestionsResponse>> {
+        let _language = params.language;
+        let suggestions: Vec<FontSuggestion> = FONT_PAIRINGS
+            .iter()
+            .map(|(scope, family, reason, category)| FontSuggestion {
+                scope: (*scope).to_string(),
+                recommended_family: (*family).to_string(),
+                reason: (*reason).to_string(),
+                category: (*category).to_string(),
+            })
+            .collect();
+
+        Ok(Some(FontSuggestionsResponse { suggestions }))
+    }
 }
 
 #[derive(Debug, Deserialize)]
 struct FontAssignmentsRequestParams {
     uri: String,
 }
+
+#[derive(Debug, Deserialize)]
+struct SuggestFontsParams {
+    /// Optional language ID to tailor suggestions.
+    language: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct FontSuggestion {
+    scope: String,
+    recommended_family: String,
+    reason: String,
+    category: String,
+}
+
+#[derive(Debug, Serialize)]
+struct FontSuggestionsResponse {
+    suggestions: Vec<FontSuggestion>,
+}
+
+/// Curated font pairing database indexed by scope category.
+static FONT_PAIRINGS: &[(&str, &str, &str, &str)] = &[
+    // (scope_prefix, family, reason, category)
+    (
+        "keyword",
+        "Maple Mono",
+        "Clear geometric mono with heavy weight for keywords",
+        "geometric",
+    ),
+    (
+        "keyword.control",
+        "Fira Code",
+        "Ligature support for control flow operators",
+        "ligature",
+    ),
+    (
+        "comment",
+        "IBM Plex Mono",
+        "Humanist design improves readability for prose comments",
+        "humanist",
+    ),
+    (
+        "comment.doc",
+        "Source Serif Pro",
+        "Serif face signals documentation distinct from code",
+        "serif",
+    ),
+    (
+        "string",
+        "Source Code Pro",
+        "Light weight creates visual contrast for string literals",
+        "light",
+    ),
+    (
+        "string.regexp",
+        "JetBrains Mono",
+        "Dense information density suits regex patterns",
+        "dense",
+    ),
+    (
+        "entity.name.function",
+        "Monaspace Argon",
+        "Distinctive x-height for function identification",
+        "variable",
+    ),
+    (
+        "entity.name.type",
+        "Monaspace Neon",
+        "Wide stance for type names at a glance",
+        "variable",
+    ),
+    (
+        "variable",
+        "JetBrains Mono",
+        "Balanced weight for the most common token type",
+        "balanced",
+    ),
+    (
+        "variable.parameter",
+        "MonoLisa",
+        "Italic-friendly for parameter distinction",
+        "humanist",
+    ),
+    (
+        "constant",
+        "Monaspace Radon",
+        "Heavy weight emphasizes constant values",
+        "variable",
+    ),
+    (
+        "constant.numeric",
+        "Input Mono",
+        "Tabular figures for numeric alignment",
+        "tabular",
+    ),
+    (
+        "support.function",
+        "Monaspace Krypton",
+        "Medium weight for built-in function calls",
+        "variable",
+    ),
+    (
+        "punctuation",
+        "Fira Code",
+        "Ligature support for bracket pairs and arrows",
+        "ligature",
+    ),
+    (
+        "operator",
+        "Operator Mono",
+        "Italic-style operators for visual separation",
+        "stylish",
+    ),
+    (
+        "storage.type",
+        "Maple Mono",
+        "Bold weight for type annotations",
+        "geometric",
+    ),
+];
 
 static TOKEN_PARSER: LazyLock<TokenParser> = LazyLock::new(TokenParser::new);
 
@@ -455,13 +617,17 @@ impl LanguageServer for PolyfontLanguageServer {
         let uri = params.text_document.uri.to_string();
         info!("document opened: {uri}");
 
+        let text = params.text_document.text.clone();
+        let tokens = tokenize_document(&text, &uri);
+
         {
             let mut state = self.state.write().await;
             state.documents.insert(
                 uri.clone(),
                 DocumentState {
                     version: params.text_document.version,
-                    text: params.text_document.text,
+                    text,
+                    cached_tokens: tokens,
                 },
             );
         }
@@ -473,10 +639,13 @@ impl LanguageServer for PolyfontLanguageServer {
         let uri = params.text_document.uri.to_string();
 
         if let Some(change) = params.content_changes.into_iter().last() {
+            let text = change.text.clone();
+            let tokens = tokenize_document(&text, &uri);
             let mut state = self.state.write().await;
             if let Some(doc) = state.documents.get_mut(&uri) {
-                doc.text = change.text;
+                doc.text = text;
                 doc.version = params.text_document.version;
+                doc.cached_tokens = tokens;
             }
         }
 

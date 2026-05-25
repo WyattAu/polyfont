@@ -3,12 +3,20 @@ use std::process::Command;
 use thiserror::Error;
 use tracing::{debug, warn};
 
+pub mod download;
+
 #[derive(Debug, Error)]
 pub enum FontError {
     #[error("font command failed: {0}")]
     CommandFailed(String),
     #[error("failed to parse font output")]
     ParseError,
+    #[error("font discovery failed: {0}")]
+    DiscoveryFailed(String),
+    #[error("io error: {0}")]
+    Io(String),
+    #[error("lockfile error: {0}")]
+    Lockfile(String),
 }
 
 pub type Result<T> = std::result::Result<T, FontError>;

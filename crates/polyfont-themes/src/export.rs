@@ -61,6 +61,7 @@ mod tests {
                 weight: FontWeight::default(),
                 style: FontStyle::default(),
                 size: None,
+                axes: vec![],
             }),
             rules: vec![
                 RuleConfig {
@@ -71,6 +72,7 @@ mod tests {
                         weight: FontWeight::Bold,
                         style: FontStyle::default(),
                         size: None,
+                        axes: vec![],
                     },
                 },
                 RuleConfig {
@@ -81,6 +83,7 @@ mod tests {
                         weight: FontWeight::default(),
                         style: FontStyle::Italic,
                         size: None,
+                        axes: vec![],
                     },
                 },
             ],
@@ -123,6 +126,7 @@ mod tests {
                 weight: FontWeight::default(),
                 style: FontStyle::default(),
                 size: None,
+                axes: vec![],
             }),
             rules: vec![RuleConfig {
                 scope: "string".to_string(),
@@ -132,6 +136,7 @@ mod tests {
                     weight: FontWeight::default(),
                     style: FontStyle::default(),
                     size: None,
+                    axes: vec![],
                 },
             }],
         };

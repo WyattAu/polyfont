@@ -1,0 +1,28 @@
+<idea-plugin>
+    <id>com.polyfont.intellij</id>
+    <name>Polyfont</name>
+    <vendor>Polyfont</vendor>
+    <description>Per-token font highlighting</description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationService
+                serviceImplementation="com.polyfont.intellij.PolyfontSettings"/>
+        <applicationConfigurable
+                parentId="appearance"
+                instance="com.polyfont.intellij.PolyfontConfigurable"
+                id="com.polyfont.intellij.PolyfontConfigurable"
+                displayName="Polyfont"/>
+        <notificationGroup id="Polyfont Notifications" displayType="BALLOON"/>
+    </extensions>
+
+    <actions>
+        <action id="com.polyfont.intellij.ApplyAction"
+                class="com.polyfont.intellij.PolyfontApplyAction"
+                text="Apply Polyfont Fonts"
+                description="Apply polyfont font rules from .polyfont.toml">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>

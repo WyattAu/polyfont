@@ -2,9 +2,9 @@
 
 ```yaml
 current_phase: 10
-version: 0.8.0
+version: 0.9.0
 status: Completed
-last_updated: 2026-05-21
+last_updated: 2026-05-25
 error_level: null
 rollback_checkpoint: null
 recovery_time_estimate: null
@@ -20,9 +20,9 @@ recovery_time_estimate: null
 | 2 Architecture | Completed | 2026-05-20 | Blue Papers, component design |
 | 3 Security | Skipped | - | No security-critical paths in v0.1 |
 | 4 Performance | Completed | 2026-05-21 | Criterion benchmarks, TrieScopeResolver |
-| 5 Prototype | Completed | 2026-05-21 | 8 crates, 96 tests, 6 editor integrations |
+| 5 Prototype | Completed | 2026-05-21 | 9 crates, 117 tests, 7 editor integrations |
 | 6 CI/CD | Completed | 2026-05-21 | SemVer checks, cross-compilation, release workflow |
 | 7 Documentation | Completed | 2026-05-21 | CONTRIBUTING.md, architecture, migration, API docs |
-| 8 Execution | Completed | 2026-05-21 | publish.sh, rockspec, CHANGELOG up to date |
+| 8 Execution | Completed | 2026-05-25 | v0.9: variable axes, font download, LSP suggestions, render skeleton |
 | 9 Deployment | Completed | 2026-05-21 | GitHub Pages, release workflow with 5 targets |
-| 10 Closure | Completed | 2026-05-21 | All v0.1-v0.8 milestones delivered |
+| 10 Closure | Completed | 2026-05-25 | v0.9 delivered: 9 crates, 117 tests |

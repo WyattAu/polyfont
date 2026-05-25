@@ -20,6 +20,7 @@ CRATES=(
     polyfont-fonts
     polyfont-themes
     polyfont-lsp
+    polyfont-render
     polyfont-cli
 )
 

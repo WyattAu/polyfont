@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use polyfont_core::{FontRule, FontSpec, FontStyle, FontWeight};
+use polyfont_core::{AxisValue, FontRule, FontSpec, FontStyle, FontWeight};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::{debug, info, warn};
@@ -29,6 +29,8 @@ pub struct DefaultFontConfig {
     pub style: FontStyle,
     #[serde(default)]
     pub size: Option<f32>,
+    #[serde(default)]
+    pub axes: Vec<AxisValue>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -48,6 +50,8 @@ pub struct FontConfig {
     pub style: FontStyle,
     #[serde(default)]
     pub size: Option<f32>,
+    #[serde(default)]
+    pub axes: Vec<AxisValue>,
 }
 
 impl PolyfontConfig {
@@ -98,6 +102,7 @@ impl PolyfontConfig {
                     weight: r.font.weight,
                     style: r.font.style,
                     size: r.font.size,
+                    axes: r.font.axes.clone(),
                 },
             })
             .collect();
@@ -111,6 +116,7 @@ impl PolyfontConfig {
                     weight: default.weight,
                     style: default.style,
                     size: default.size,
+                    axes: default.axes.clone(),
                 },
             });
         }
@@ -371,6 +377,7 @@ family = "Monaspace Argon"
                     weight: FontWeight::default(),
                     style: FontStyle::default(),
                     size: None,
+                    axes: vec![],
                 },
             }],
         };
@@ -391,6 +398,7 @@ family = "Monaspace Argon"
                     weight: FontWeight::default(),
                     style: FontStyle::default(),
                     size: None,
+                    axes: vec![],
                 },
             }],
         };
@@ -408,6 +416,7 @@ family = "Monaspace Argon"
                 weight: FontWeight::default(),
                 style: FontStyle::default(),
                 size: None,
+                axes: vec![],
             }),
             rules: vec![],
         };
@@ -439,6 +448,7 @@ family = "Monaspace Argon"
                     weight: FontWeight::default(),
                     style: FontStyle::Italic,
                     size: None,
+                    axes: vec![],
                 },
             }],
         };

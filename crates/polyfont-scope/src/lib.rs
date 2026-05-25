@@ -547,6 +547,7 @@ mod tests {
                     weight: FontWeight::default(),
                     style: FontStyle::default(),
                     size: None,
+                    axes: vec![],
                 },
             },
             FontRule {
@@ -557,6 +558,7 @@ mod tests {
                     weight: FontWeight::default(),
                     style: FontStyle::default(),
                     size: None,
+                    axes: vec![],
                 },
             },
         ];
@@ -578,6 +580,7 @@ mod tests {
                     weight: FontWeight::default(),
                     style: FontStyle::default(),
                     size: None,
+                    axes: vec![],
                 },
             },
             FontRule {
@@ -588,6 +591,7 @@ mod tests {
                     weight: FontWeight::default(),
                     style: FontStyle::default(),
                     size: None,
+                    axes: vec![],
                 },
             },
         ];

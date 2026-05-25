@@ -4,6 +4,29 @@ All notable changes to the polyfont project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.0] - 2026-05-25
+
+### Added
+
+- **Variable font axis control** (`polyfont-core`): `NamedAxis` enum (Weight/Width/Slant/OpticalSize/Italic), `AxisValue` (Named or Custom with OpenType 4-char tags), `css_variation_settings()`, `axes_map()`. All `FontSpec`/`FontConfig`/`DefaultFontConfig` now carry `axes: Vec<AxisValue>`.
+- **Font download system** (`polyfont-fonts`): `FontDownloader`, `FontSource` enum (GitHub/GoogleFonts/Url), known fonts registry (6 fonts), TOML lockfile. Feature-gated behind `download` (reqwest+sha2+zip).
+- **LSP font suggestions**: `polyfont/suggestFonts` custom LSP method returning curated font pairings (16 scope-font recommendations) via `FONT_PAIRINGS` database.
+- **LSP incremental token caching**: `DocumentState.cached_tokens` field avoids redundant re-tokenization on unchanged documents.
+- **Collaborative themes** (`polyfont-themes`): `ThemeShare` (gist-style sharing), `ThemeLockfile` (version tracking), `ThemeDiscovery` (project theme scanning).
+- **Accessibility checker** (`polyfont-themes`): `AccessibilityChecker` with `AccessibilityReport`, dyslexia-friendly font recommendations (OpenDyslexic, Atkinson Hyperlegible, Lexend, Comic Neue, Read Regular), font-similarity detection, 5 accessibility tests.
+- **Rendering engine skeleton** (`polyfont-render`): `FontAtlas`, `ScopeAnnotator`, `RenderEngine`, `RenderConfig`, `GlyphPosition`, `RenderedLine`. Feature-gated GPU (`wgpu`+`glyphon`+`cosmic-text`) and software (`softbuffer`+`tiny-skia`+`fontdb`) paths.
+- **JetBrains plugin skeleton** (`editors/jetbrains/`): IntelliJ plugin with `PolyfontSettings`, `PolyfontApplyAction`, `PolyfontConfigParser` in Kotlin.
+- **Neovim font RFC** (`docs/neovim-font-rfc.md`): 441-line RFC proposing `font` field in `nvim_set_hl()` for neovim/neovim.
+
+### Changed
+
+- 49 `FontSpec`/`FontConfig` construction sites updated across themes/scope crates to include `axes` field.
+- Workspace expanded from 8 to 9 crates.
+
+### Tests
+
+- Total test count: 117 (up from 96 in v0.8.0).
+
 ## [0.8.0] - 2026-05-21
 
 ### Added

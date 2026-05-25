@@ -51,6 +51,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                     weight: FontWeight::Regular,
                     style: FontStyle::Normal,
                     size: None,
+                    axes: vec![],
                 }),
                 rules: vec![
                     RuleConfig {
@@ -61,6 +62,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Bold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -71,6 +73,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Light,
                             style: FontStyle::Italic,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -81,6 +84,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Regular,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -91,6 +95,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::SemiBold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -101,6 +106,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::SemiBold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -111,6 +117,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Regular,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -121,6 +128,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Bold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -131,6 +139,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Medium,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -141,6 +150,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Bold,
                             style: FontStyle::Italic,
                             size: None,
+                            axes: vec![],
                         },
                     },
                 ],
@@ -157,6 +167,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                     weight: FontWeight::Regular,
                     style: FontStyle::Normal,
                     size: None,
+                    axes: vec![],
                 }),
                 rules: vec![
                     RuleConfig {
@@ -167,6 +178,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Regular,
                             style: FontStyle::Italic,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -177,6 +189,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Medium,
                             style: FontStyle::Italic,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -187,6 +200,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Bold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -197,6 +211,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Light,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -207,6 +222,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::SemiBold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -217,6 +233,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Medium,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -227,6 +244,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Regular,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -237,6 +255,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Bold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -247,6 +266,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Medium,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -257,6 +277,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Bold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                 ],
@@ -273,6 +294,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                     weight: FontWeight::Regular,
                     style: FontStyle::Normal,
                     size: None,
+                    axes: vec![],
                 }),
                 rules: vec![
                     RuleConfig {
@@ -283,6 +305,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Bold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -293,6 +316,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Light,
                             style: FontStyle::Italic,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -303,6 +327,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Thin,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -313,6 +338,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::SemiBold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -323,6 +349,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Medium,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -333,6 +360,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Regular,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -343,6 +371,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::ExtraBold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -353,6 +382,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Medium,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -363,6 +393,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Black,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                 ],
@@ -379,6 +410,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                     weight: FontWeight::Regular,
                     style: FontStyle::Normal,
                     size: None,
+                    axes: vec![],
                 }),
                 rules: vec![
                     RuleConfig {
@@ -389,6 +421,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Bold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -399,6 +432,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Regular,
                             style: FontStyle::Italic,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -409,6 +443,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Light,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -419,6 +454,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::SemiBold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                 ],
@@ -435,6 +471,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                     weight: FontWeight::Regular,
                     style: FontStyle::Normal,
                     size: None,
+                    axes: vec![],
                 }),
                 rules: vec![
                     RuleConfig {
@@ -445,6 +482,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Bold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -455,6 +493,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::ExtraBold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -465,6 +504,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Regular,
                             style: FontStyle::Italic,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -475,6 +515,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Medium,
                             style: FontStyle::Italic,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -485,6 +526,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Light,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -495,6 +537,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Medium,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -505,6 +548,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::SemiBold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -515,6 +559,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Bold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -525,6 +570,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::SemiBold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -535,6 +581,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Bold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -545,6 +592,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Bold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -555,6 +603,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Bold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -565,6 +614,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Regular,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -575,6 +625,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Light,
                             style: FontStyle::Italic,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -585,6 +636,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Bold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -595,6 +647,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::ExtraBold,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -605,6 +658,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Medium,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -615,6 +669,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Bold,
                             style: FontStyle::Italic,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -625,6 +680,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Light,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                     RuleConfig {
@@ -635,6 +691,7 @@ fn builtin_themes() -> Vec<BuiltinTheme> {
                             weight: FontWeight::Regular,
                             style: FontStyle::Normal,
                             size: None,
+                            axes: vec![],
                         },
                     },
                 ],

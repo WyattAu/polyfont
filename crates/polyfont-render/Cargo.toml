@@ -1,0 +1,32 @@
+[package]
+name = "polyfont-render"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+keywords = ["font", "rendering", "gpu", "text", "compositing"]
+categories = ["text-editors", "graphics", "rendering"]
+description = "Custom multi-font rendering engine for polyfont"
+
+[features]
+default = []
+# Enable GPU-accelerated rendering via wgpu
+gpu = ["wgpu", "glyphon", "cosmic-text"]
+# Enable software rendering fallback
+software = ["softbuffer", "tiny-skia", "fontdb"]
+
+[dependencies]
+polyfont-core = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+# GPU rendering (optional)
+wgpu = { version = "22", optional = true }
+glyphon = { version = "0.7", optional = true }
+cosmic-text = { version = "0.12", optional = true }
+
+# Software rendering (optional)
+softbuffer = { version = "0.4", optional = true }
+tiny-skia = { version = "0.11", optional = true }
+fontdb = { version = "0.18", optional = true }

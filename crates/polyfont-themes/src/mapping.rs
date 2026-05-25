@@ -99,6 +99,7 @@ pub fn build_config_from_entries(
                 weight,
                 style,
                 size: None,
+                axes: vec![],
             },
         });
     }
@@ -116,6 +117,7 @@ pub fn build_config_from_entries(
             weight: FontWeight::default(),
             style: FontStyle::default(),
             size: None,
+            axes: vec![],
         }),
         rules,
     }
