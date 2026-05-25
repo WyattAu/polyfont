@@ -207,7 +207,7 @@ impl ConfigLoader {
         }
 
         let mut iter = configs.into_iter();
-        let first = Self::load_from_path(&iter.next().unwrap())?;
+        let first = Self::load_from_path(&iter.next().expect("configs verified non-empty above"))?;
         let merged = iter.fold(first, |acc, path| match Self::load_from_path(&path) {
             Ok(overlay) => PolyfontConfig::merge(acc, overlay),
             Err(e) => {

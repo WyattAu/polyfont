@@ -1,6 +1,7 @@
 use polyfont_config::{DefaultFontConfig, FontConfig, PolyfontConfig, RuleConfig};
 use polyfont_core::{FontStyle, FontWeight};
 
+#[derive(Debug, Clone)]
 pub struct ThemeInfo {
     pub name: String,
     pub description: String,
@@ -16,13 +17,18 @@ pub struct ThemeRegistry;
 
 impl ThemeRegistry {
     pub fn list_themes(&self) -> Vec<ThemeInfo> {
-        builtin_themes()
-            .into_iter()
-            .map(|t| ThemeInfo {
-                name: t.name,
-                description: t.description,
+        static CACHE: std::sync::OnceLock<Vec<ThemeInfo>> = std::sync::OnceLock::new();
+        CACHE
+            .get_or_init(|| {
+                builtin_themes()
+                    .into_iter()
+                    .map(|t| ThemeInfo {
+                        name: t.name,
+                        description: t.description,
+                    })
+                    .collect()
             })
-            .collect()
+            .clone()
     }
 
     pub fn get_theme(&self, name: &str) -> Option<&'static BuiltinTheme> {

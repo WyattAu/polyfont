@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use polyfont_config::PolyfontConfig;
 
 #[cfg(test)]
@@ -48,21 +50,21 @@ impl AccessibilityChecker {
     pub fn check_config(config: &PolyfontConfig) -> AccessibilityReport {
         let mut issues = Vec::new();
 
-        let mut families: Vec<String> = Vec::new();
+        let mut families: HashSet<String> = HashSet::new();
 
         if let Some(ref default) = config.default {
-            families.push(default.family.clone());
+            families.insert(default.family.clone());
             collect_size_issue(&default.size, &mut issues);
             collect_fallback_issue(&default.fallbacks, &mut issues);
         }
 
         for rule in &config.rules {
-            if !families.contains(&rule.font.family) {
-                families.push(rule.font.family.clone());
-            }
+            families.insert(rule.font.family.clone());
             collect_size_issue(&rule.font.size, &mut issues);
             collect_fallback_issue(&rule.font.fallbacks, &mut issues);
         }
+
+        let families: Vec<String> = families.into_iter().collect();
 
         if families.len() > MAX_FONT_FAMILIES {
             issues.push(AccessibilityIssue::TooManyFonts(families.len()));

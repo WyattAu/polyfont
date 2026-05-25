@@ -4,7 +4,7 @@
   "description": "Apply different fonts per syntax token for richer code visualization",
   "version": "0.1.0",
   "publisher": "polyfont",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "engines": {
     "vscode": "^1.97.0"
   },

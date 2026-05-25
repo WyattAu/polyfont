@@ -13,6 +13,8 @@
 //!
 //! This is a skeleton crate. The rendering pipeline is under development.
 
+use std::collections::HashSet;
+
 use polyfont_core::PolyfontEngine;
 use thiserror::Error;
 use tracing::info;
@@ -95,7 +97,7 @@ impl Default for RenderConfig {
 /// In GPU mode, these are uploaded as textures. In software mode,
 /// they are kept as alpha masks.
 pub struct FontAtlas {
-    families: Vec<String>,
+    families: HashSet<String>,
 }
 
 impl FontAtlas {
@@ -104,22 +106,24 @@ impl FontAtlas {
     pub fn new() -> Self {
         info!("initializing font atlas");
         Self {
-            families: Vec::new(),
+            families: HashSet::new(),
         }
     }
 
     /// Register a font family for use in rendering.
     pub fn register_family(&mut self, family: &str) {
-        if !self.families.contains(&family.to_string()) {
+        if !self.families.contains(family) {
             info!(family, "registering font family in atlas");
-            self.families.push(family.to_string());
+            self.families.insert(family.to_string());
         }
     }
 
     /// List all registered font families.
     #[must_use]
-    pub fn registered_families(&self) -> &[String] {
-        &self.families
+    pub fn registered_families(&self) -> Vec<&String> {
+        let mut families: Vec<&String> = self.families.iter().collect();
+        families.sort();
+        families
     }
 
     /// Clear all cached glyphs and registered families.

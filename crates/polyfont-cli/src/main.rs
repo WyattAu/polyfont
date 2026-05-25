@@ -255,7 +255,9 @@ fn cmd_vscode(config: &PolyfontConfig, output: Option<&PathBuf>) -> Result<()> {
                 let obj = val
                     .as_object_mut()
                     .context("existing settings.json is not an object")?;
-                let snippet_obj = snippet.as_object().unwrap();
+                let snippet_obj = snippet
+                    .as_object()
+                    .context("generated snippet is not a JSON object")?;
                 for (k, v) in snippet_obj {
                     obj.insert(k.clone(), v.clone());
                 }
@@ -494,7 +496,7 @@ fn cmd_font_preview(family: &str, text: &str) -> Result<()> {
         .replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;");
-    let width = text.len() as u32 * 9;
+    let width = text.chars().count() as u32 * 9;
     let height = 30u32;
 
     let svg = [

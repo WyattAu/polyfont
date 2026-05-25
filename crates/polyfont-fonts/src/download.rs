@@ -154,13 +154,14 @@ struct LockEntry {
 #[cfg(feature = "download")]
 impl FontDownloader {
     fn ensure_cache_dir(&self) -> Result<()> {
-        std::fs::create_dir_all(&self.cache_dir).map_err(|e| FontError::Io(e.to_string()))
+        std::fs::create_dir_all(&self.cache_dir)?;
+        Ok(())
     }
 
     fn compute_sha256(path: &Path) -> Result<String> {
         use sha2::{Digest, Sha256};
 
-        let data = std::fs::read(path).map_err(|e| FontError::Io(e.to_string()))?;
+        let data = std::fs::read(path)?;
         let mut hasher = Sha256::new();
         hasher.update(&data);
         Ok(format!("{:x}", hasher.finalize()))
@@ -175,8 +176,7 @@ impl FontDownloader {
         if !self.lock_path.exists() {
             return Ok(Vec::new());
         }
-        let content =
-            std::fs::read_to_string(&self.lock_path).map_err(|e| FontError::Io(e.to_string()))?;
+        let content = std::fs::read_to_string(&self.lock_path)?;
         let table: toml::Table =
             toml::from_str(&content).map_err(|e| FontError::Lockfile(e.to_string()))?;
         let entries = table
@@ -226,7 +226,8 @@ impl FontDownloader {
         table.insert("entry".to_string(), toml::Value::Array(arr));
         let content =
             toml::to_string_pretty(&table).map_err(|e| FontError::Lockfile(e.to_string()))?;
-        std::fs::write(&self.lock_path, content).map_err(|e| FontError::Io(e.to_string()))
+        std::fs::write(&self.lock_path, content)?;
+        Ok(())
     }
 
     fn find_by_checksum(&self, sha256: &str) -> Option<LockEntry> {
@@ -289,7 +290,7 @@ impl FontDownloader {
             let ext = if url.ends_with(".otf") { "otf" } else { "ttf" };
             let filename = format!("{}.{}", family.replace(' ', "_"), ext);
             let dest = self.cache_dir.join(&filename);
-            std::fs::write(&dest, &bytes).map_err(|e| FontError::Io(e.to_string()))?;
+            std::fs::write(&dest, &bytes)?;
             vec![dest]
         };
 
@@ -351,9 +352,8 @@ impl FontDownloader {
                     .to_string();
                 let dest = self.cache_dir.join(&file_name);
                 let mut buf = Vec::new();
-                file.read_to_end(&mut buf)
-                    .map_err(|e| FontError::Io(e.to_string()))?;
-                std::fs::write(&dest, &buf).map_err(|e| FontError::Io(e.to_string()))?;
+                file.read_to_end(&mut buf)?;
+                std::fs::write(&dest, &buf)?;
                 paths.push(dest);
             }
         }

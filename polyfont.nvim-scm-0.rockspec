@@ -1,9 +1,9 @@
 rockspec_format = "3.0"
 package = "polyfont.nvim"
-version = "0.8.0-1"
+version = "0.10.0-1"
 source = {
   url = "git+https://github.com/WyattAu/polyfont.git",
-  tag = "v0.8.0",
+  tag = "v0.10.0",
 }
 description = {
   summary = "Per-token font highlighting for Neovim",

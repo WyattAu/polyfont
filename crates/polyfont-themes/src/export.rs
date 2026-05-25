@@ -14,34 +14,33 @@ impl ThemeExporter {
         let mut entries = Vec::new();
 
         for rule in &config.rules {
-            let mut font_style_parts = Vec::new();
+            let mut font_style: Vec<serde_json::Value> = Vec::new();
             if rule.font.weight != polyfont_core::FontWeight::default() {
-                font_style_parts.push(format!("\"{}\"", rule.font.weight));
+                font_style.push(serde_json::Value::String(rule.font.weight.to_string()));
             }
             if rule.font.style != polyfont_core::FontStyle::default() {
-                font_style_parts.push(format!("\"{}\"", rule.font.style));
+                font_style.push(serde_json::Value::String(rule.font.style.to_string()));
             }
 
-            let font_style = if font_style_parts.is_empty() {
-                "null".to_string()
+            let font_style_value = if font_style.is_empty() {
+                serde_json::Value::Null
             } else {
-                format!("[{}]", font_style_parts.join(", "))
+                serde_json::Value::Array(font_style)
             };
 
-            entries.push(format!(
-                "    {{ \"scope\": \"{}\", \"settings\": {{ \"fontStyle\": {font_style} }} }}",
-                rule.scope
-            ));
+            entries.push(serde_json::json!({
+                "scope": rule.scope,
+                "settings": {
+                    "fontStyle": font_style_value
+                }
+            }));
         }
 
-        let body = entries.join(",\n");
-        Ok(format!(
-            r#"{{
-  "polyfont.tokenColors": [
-{body}
-  ]
-}}"#
-        ))
+        let output = serde_json::json!({
+            "polyfont.tokenColors": entries
+        });
+
+        Ok(serde_json::to_string_pretty(&output)?)
     }
 }
 

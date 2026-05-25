@@ -14,7 +14,7 @@ pub enum FontError {
     #[error("font discovery failed: {0}")]
     DiscoveryFailed(String),
     #[error("io error: {0}")]
-    Io(String),
+    Io(#[from] std::io::Error),
     #[error("lockfile error: {0}")]
     Lockfile(String),
 }
