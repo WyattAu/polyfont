@@ -4,6 +4,24 @@ All notable changes to the polyfont project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.10.1] - 2026-05-25
+
+### Fixed
+
+- **SVG preview width calculation**: Use `text.chars().count()` instead of `text.len()` for correct width with multi-byte UTF-8 characters.
+- **`export_vscode` JSON generation**: Replace string formatting with `serde_json` to prevent invalid JSON from special characters in scope names.
+- **`FontError::Io` error chain**: Use `#[from] std::io::Error` instead of stringly-typed variant to preserve full error context.
+- **`load_merged` unwrap safety**: Replace bare `.unwrap()` with `.expect()` including descriptive message.
+- **`FontAtlas` family storage**: Use `HashSet` instead of `Vec` for O(1) deduplication.
+- **`AccessibilityChecker` family collection**: Use `HashSet` for O(1) deduplication instead of O(n) `Vec::contains`.
+- **`ThemeRegistry::list_themes` caching**: Add `OnceLock` cache to avoid rebuilding theme list on every call.
+- **VSCode extension license**: Corrected from MIT to Apache-2.0 to match project license.
+- **Rockspec version**: Updated from v0.8.0 to v0.10.0 to match current release.
+- **Documentation sidebar**: Removed inconsistent `.md` links from HTML sidebar.
+- **Migration guide**: Updated to v0.10.0 with v0.9.0 and v0.10.0 entries.
+- **Docs test count**: Updated from 96 to 120.
+- **Pre-commit hook**: Fixed `set -e` interaction with result capture pattern.
+
 ## [0.10.0] - 2026-05-25
 
 ### Added
