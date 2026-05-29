@@ -3,11 +3,12 @@ name = "polyfont-cli"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "CLI tool for polyfont multi-font configuration"
+description = "Command-line interface for polyfont configuration and font management"
 repository.workspace = true
+documentation.workspace = true
 readme = "README.md"
-keywords = ["font", "syntax-highlighting", "textmate", "editor"]
-categories = ["text-editors", "development-tools"]
+keywords = ["cli", "font", "polyfont", "terminal", "code-editor"]
+categories = ["command-line-utilities", "text-processing"]
 
 [[bin]]
 name = "polyfont"

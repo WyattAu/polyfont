@@ -3,11 +3,12 @@ name = "polyfont-config"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Configuration file parsing for polyfont"
+description = "TOML configuration loading and validation for polyfont"
 repository.workspace = true
+documentation.workspace = true
 readme = "README.md"
-keywords = ["font", "syntax-highlighting", "textmate", "editor"]
-categories = ["text-editors", "development-tools"]
+keywords = ["config", "toml", "font", "configuration", "polyfont"]
+categories = ["config", "text-processing"]
 
 [dependencies]
 polyfont-core = { workspace = true }
@@ -16,3 +17,11 @@ toml = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 walkdir = { workspace = true }
+polyfont-scope = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "config_loading"
+harness = false

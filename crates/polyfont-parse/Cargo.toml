@@ -4,10 +4,11 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+documentation.workspace = true
 readme = "README.md"
-keywords = ["font", "syntax-highlighting", "textmate", "tree-sitter"]
-categories = ["text-editors", "development-tools"]
-description = "Tree-sitter-based token parsing for polyfont"
+keywords = ["tree-sitter", "tokenization", "parsing", "syntax-highlighting"]
+categories = ["parser-implementations", "text-processing"]
+description = "Tree-sitter-based tokenization for polyfont"
 
 [dependencies]
 polyfont-core = { workspace = true }
@@ -64,3 +65,12 @@ optional = true
 [dependencies.tree-sitter-lua]
 version = "0.5"
 optional = true
+
+[dev-dependencies]
+criterion = { workspace = true }
+polyfont-core = { workspace = true }
+polyfont-scope = { workspace = true }
+
+[[bench]]
+name = "tokenization"
+harness = false

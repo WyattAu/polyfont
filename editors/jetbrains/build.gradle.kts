@@ -19,6 +19,10 @@ intellij {
     plugins.set(emptyList<String>())
 }
 
+dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+}
+
 tasks {
     withType<KotlinCompile> {
         kotlinOptions.jvmTarget = "17"
@@ -27,6 +31,10 @@ tasks {
     patchPluginXml {
         sinceBuild.set("241")
         untilBuild.set("251.*")
+    }
+
+    test {
+        useJUnitPlatform()
     }
 
     signPlugin {

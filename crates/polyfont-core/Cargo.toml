@@ -3,18 +3,24 @@ name = "polyfont-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Core types and traits for polyfont multi-font rendering"
+description = "Core types and engine for per-token font resolution in syntax-highlighted code"
 repository.workspace = true
+documentation.workspace = true
 readme = "README.md"
-keywords = ["font", "syntax-highlighting", "textmate", "editor"]
-categories = ["text-editors", "development-tools"]
+keywords = ["font", "syntax-highlighting", "textmate", "code-editor", "monospace"]
+categories = ["text-processing", "visualization"]
 
 [dependencies]
 serde = { workspace = true }
 thiserror = { workspace = true }
+dhat = { version = "0.3", optional = true }
 
 [dev-dependencies]
-criterion = "0.5"
+criterion = { workspace = true }
+polyfont-scope = { workspace = true }
+
+[features]
+dhat = ["dep:dhat"]
 
 [[bench]]
 name = "scope_matching"

@@ -3,11 +3,12 @@ name = "polyfont-lsp"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "LSP server for polyfont multi-font rendering"
+description = "LSP server providing per-token font assignments for polyfont-aware editors"
 repository.workspace = true
+documentation.workspace = true
 readme = "README.md"
-keywords = ["font", "syntax-highlighting", "textmate", "editor"]
-categories = ["text-editors", "development-tools"]
+keywords = ["lsp", "language-server", "font", "syntax-highlighting", "tower-lsp"]
+categories = ["development-tools"]
 
 [dependencies]
 polyfont-core = { workspace = true }

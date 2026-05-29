@@ -5,18 +5,23 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
-keywords = ["font", "rendering", "gpu", "text", "compositing"]
-categories = ["text-editors", "graphics", "rendering"]
-description = "Custom multi-font rendering engine for polyfont"
+keywords = ["render", "font", "text-rendering", "atlas", "glyph"]
+categories = ["rendering", "text-processing"]
+description = "Software rendering engine for per-token font output"
+documentation.workspace = true
 
 [features]
 default = []
-# Enable GPU-accelerated rendering via wgpu (requires wgpu, glyphon, cosmic-text)
+software = ["fontdb", "tiny-skia"]
 gpu = []
-# Enable software rendering fallback (requires softbuffer, tiny-skia, fontdb)
-software = []
 
 [dependencies]
-polyfont-core = { workspace = true }
-thiserror = { workspace = true }
-tracing = { workspace = true }
+polyfont-core.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+fontdb = { version = "0.23", optional = true }
+tiny-skia = { version = "0.11", optional = true }
+
+[dev-dependencies]
+polyfont-scope.workspace = true
+tempfile = "3"

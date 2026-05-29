@@ -4,6 +4,63 @@ All notable changes to the polyfont project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- **v0.11: Render engine software path** (`polyfont-render`):
+  - `FontCache` with family registration and metric lookup (fontdb-gated).
+  - `FontMetrics` with ascent/descent/line_gap/units_per_em and pixel scaling.
+  - `BaselineAligner` computes per-family Y offsets for cross-font baseline alignment.
+  - `RenderOutput` enum: `Svg(String)` and `Png { width, height, pixels }`.
+  - `RenderEngine::render_tokens_svg()` generates SVG with per-token `<text>` elements.
+  - `RenderEngine::render_tokens_png()` with built-in 5x8 bitmap font for ASCII (software feature).
+  - `PngRenderer` blits scaled bitmap glyphs onto RGBA pixel buffer.
+  - `RenderConfig` builder pattern with validation and pixel line height computation.
+  - 51 new tests in polyfont-render (up from 4).
+- **v0.12: LSP production hardening** (`polyfont-lsp`):
+  - Fixed UTF-16 column computation in naive tokenizer (was byte offsets, now proper UTF-16 code units per LSP spec).
+  - Client-reported `language_id` from `did_open` now used instead of URI-only inference.
+  - `str_len_utf16()` helper for correct non-ASCII position encoding.
+  - Debounced `did_change` with 16ms coalesce window (tokio::spawn + abort pattern).
+  - `DocumentState` tracks `language_id` for per-document language awareness.
+  - `serve_suggest_fonts` now uses `params.language` for filtering.
+  - Config load failure sends `window/showMessage` warning to client.
+  - 21 new LSP tests (up from 27 to 48), covering UTF-16 edge cases, CJK/emoji, language ID override, build_assignment_entries edge cases.
+- **v0.14: Performance benchmarks**:
+  - Expanded polyfont-core benchmarks to 1000 rules (was 100).
+  - New `trie_resolve` benchmark group comparing TrieScopeResolver vs ScopeMatchEngine.
+  - New `polyfont-parse` benchmarks: naive tokenization at 1K/10K/50K lines, byte offset conversion.
+  - New `polyfont-config` benchmarks: config parsing at 50/100/200/500 rules, full pipeline measurement.
+  - `bench.yml` CI workflow with 10% regression threshold.
+- **v0.15: Editor test suites**:
+  - **VSCode**: 25 new tests for `buildTextMateRules` and `isBoldWeight` (up from 14 to 39 total).
+  - **Sublime**: 29 new Python tests for `_build_font_face`, `_build_theme_entries`, config round-trip.
+  - **JetBrains**: 17 JUnit tests for `PolyfontConfigParser` (nested TOML, edge cases).
+  - **Neovim**: 37 busted tests for TOML parser, treesitter scope matching, config validation.
+- **v0.16: crates.io preparation**:
+  - All 9 crates have `description`, `keywords`, `categories`, `readme` metadata.
+  - All 9 crates have proper README.md with usage examples.
+  - `cargo doc --workspace --no-deps` builds with zero warnings.
+  - `criterion` added as workspace dependency.
+- **v0.17: Security audit infrastructure**:
+  - `SECURITY.md` with reporting process, disclosure timeline, dependency list.
+  - `.cargo-deny.toml` with license whitelist, advisory monitoring, source restrictions.
+  - Security audit CI job in `ci.yml` (cargo audit + cargo deny check).
+  - `cargo audit` reports 0 vulnerabilities across 350 dependencies.
+- **Doc comments**: All public API items across polyfont-scope, polyfont-themes, polyfont-parse, polyfont-lsp documented.
+- **All clippy suppressions removed** from polyfont-scope (missing_errors_doc, missing_panics_doc).
+- **JetBrains**: `untilBuild` widened to 251.* for broader IDE compatibility (2024.2+ / 2025.x).
+
+### Changed
+
+- Total Rust tests: 235 (up from 162).
+- Total VSCode tests: 39 (up from 14).
+- Total Sublime tests: 29 (new).
+- LSP server uses `TextDocumentSyncKind::FULL` with debounced re-tokenization.
+- `polyfont-lsp` Cargo.toml: added `tokio` dependency with `time` feature for debounce.
+- `polyfont-render` Cargo.toml: `software` feature gates fontdb + tiny-skia + xmlwriter.
+
 ## [0.10.1] - 2026-05-25
 
 ### Fixed

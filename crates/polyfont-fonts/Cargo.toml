@@ -5,8 +5,9 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
-keywords = ["font", "system-fonts", "font-discovery"]
-categories = ["text-editors", "development-tools"]
+documentation.workspace = true
+keywords = ["font", "discovery", "system-fonts", "cross-platform", "font-management"]
+categories = ["text-processing"]
 description = "Cross-platform font discovery and management for polyfont"
 
 [features]

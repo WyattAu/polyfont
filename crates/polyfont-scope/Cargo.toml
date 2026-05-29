@@ -3,11 +3,12 @@ name = "polyfont-scope"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "TextMate scope matching and resolution for polyfont"
+description = "TextMate scope matching and resolution engine for polyfont"
 repository.workspace = true
+documentation.workspace = true
 readme = "README.md"
-keywords = ["font", "syntax-highlighting", "textmate", "editor"]
-categories = ["text-editors", "development-tools"]
+keywords = ["textmate", "scope", "syntax-highlighting", "trie", "pattern-matching"]
+categories = ["text-processing"]
 
 [dependencies]
 polyfont-core = { workspace = true }

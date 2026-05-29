@@ -8,10 +8,11 @@ use polyfont_core::{PolyfontEngine, ScopeMatchEngine, TokenInfo};
 use polyfont_parse::{OffsetEncoding, TokenParser};
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
+use tokio::time::{Duration, sleep};
 use tower_lsp::jsonrpc::Result as LspResult;
 use tower_lsp::lsp_types::{
     DidChangeConfigurationParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
-    DidOpenTextDocumentParams, InitializeParams, InitializeResult, InitializedParams,
+    DidOpenTextDocumentParams, InitializeParams, InitializeResult, InitializedParams, MessageType,
     ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
 };
 use tower_lsp::{Client, ClientSocket, LanguageServer, LspService};
@@ -89,6 +90,7 @@ impl From<&polyfont_core::FontSpec> for FontInfo {
 struct DocumentState {
     version: i32,
     text: String,
+    language_id: String,
     /// Cached tokenization result to enable incremental re-parsing.
     cached_tokens: Vec<TokenInfo>,
 }
@@ -111,6 +113,8 @@ struct ServerState {
     config: Option<PolyfontConfig>,
     workspace_root: Option<PathBuf>,
     documents: HashMap<String, DocumentState>,
+    debounce_tasks: HashMap<String, tokio::task::JoinHandle<()>>,
+    pending_text: HashMap<String, String>,
 }
 
 impl ServerState {
@@ -120,6 +124,8 @@ impl ServerState {
             config: None,
             workspace_root: None,
             documents: HashMap::new(),
+            debounce_tasks: HashMap::new(),
+            pending_text: HashMap::new(),
         }
     }
 }
@@ -152,6 +158,162 @@ fn build_assignment_entries(
             })
         })
         .collect()
+}
+
+fn str_len_utf16(s: &str) -> u32 {
+    s.encode_utf16().count() as u32
+}
+
+fn language_id_from_uri(uri: &str) -> &str {
+    let path = uri.split('/').next_back().unwrap_or(uri);
+    match path.split('.').next_back().unwrap_or("") {
+        "rs" => "rust",
+        "ts" => "typescript",
+        "tsx" => "typescript",
+        "js" => "javascript",
+        "jsx" => "javascript",
+        "py" => "python",
+        "go" => "go",
+        "c" => "c",
+        "cpp" | "cc" | "cxx" | "h" | "hpp" => "cpp",
+        "json" => "json",
+        "toml" => "toml",
+        "lua" => "lua",
+        _ => "unknown",
+    }
+}
+
+fn tokenize_document(
+    text: &str,
+    uri: &str,
+    language_id: Option<&str>,
+) -> Vec<polyfont_core::TokenInfo> {
+    let lang = language_id.unwrap_or_else(|| language_id_from_uri(uri));
+
+    match TOKEN_PARSER.parse_tokens(text, lang, OffsetEncoding::Utf16) {
+        Ok(tokens) if !tokens.is_empty() => {
+            info!(
+                language = lang,
+                method = "tree-sitter",
+                "tokenized document"
+            );
+            tokens
+        }
+        Ok(_) => {
+            info!(
+                language = lang,
+                method = "naive",
+                reason = "tree-sitter returned no tokens",
+                "tokenized document"
+            );
+            tokenize_document_naive(text)
+        }
+        Err(e) => {
+            info!(
+                language = lang,
+                method = "naive",
+                reason = %e,
+                "tokenized document"
+            );
+            tokenize_document_naive(text)
+        }
+    }
+}
+
+#[allow(clippy::cast_possible_truncation)]
+fn tokenize_document_naive(text: &str) -> Vec<polyfont_core::TokenInfo> {
+    let mut tokens = Vec::new();
+    for (line_idx, line) in text.lines().enumerate() {
+        let leading_str = &line[..line.len() - line.trim_start().len()];
+        let trimmed = line.trim();
+        let trailing_trim_len = line.len() - line.trim_end().len();
+
+        if trimmed.is_empty() {
+            continue;
+        }
+
+        let scope = classify_line(trimmed);
+        let start_char = str_len_utf16(leading_str);
+        let content_end = line.len() - trailing_trim_len;
+        let end_char = str_len_utf16(&line[..content_end]);
+
+        tokens.push(polyfont_core::TokenInfo {
+            text: trimmed.to_string(),
+            range: polyfont_core::Range {
+                start: polyfont_core::Position {
+                    line: line_idx as u32,
+                    column: start_char,
+                },
+                end: polyfont_core::Position {
+                    line: line_idx as u32,
+                    column: end_char,
+                },
+            },
+            scope,
+            modifiers: Vec::new(),
+        });
+    }
+    tokens
+}
+
+fn classify_line(line: &str) -> String {
+    let trimmed = line.trim();
+
+    if trimmed.starts_with("///") || trimmed.starts_with("//") || trimmed.starts_with('#') {
+        return "comment".to_string();
+    }
+    if trimmed.starts_with('"') || trimmed.starts_with('\'') || trimmed.starts_with('`') {
+        return "string".to_string();
+    }
+    if trimmed.starts_with("fn ")
+        || trimmed.starts_with("function ")
+        || trimmed.starts_with("def ")
+        || trimmed.starts_with("pub fn ")
+        || trimmed.starts_with("async fn ")
+    {
+        return "entity.name.function".to_string();
+    }
+    if trimmed.starts_with("let ")
+        || trimmed.starts_with("const ")
+        || trimmed.starts_with("var ")
+        || trimmed.starts_with("mut ")
+        || trimmed.starts_with("let mut ")
+    {
+        return "variable".to_string();
+    }
+    if trimmed.starts_with("struct ")
+        || trimmed.starts_with("enum ")
+        || trimmed.starts_with("class ")
+        || trimmed.starts_with("interface ")
+        || trimmed.starts_with("type ")
+        || trimmed.starts_with("impl ")
+        || trimmed.starts_with("trait ")
+    {
+        return "entity.name.type".to_string();
+    }
+    if trimmed.starts_with("use ")
+        || trimmed.starts_with("import ")
+        || trimmed.starts_with("from ")
+        || trimmed.starts_with("mod ")
+    {
+        return "keyword".to_string();
+    }
+    if trimmed.starts_with("if ")
+        || trimmed.starts_with("else")
+        || trimmed.starts_with("for ")
+        || trimmed.starts_with("while ")
+        || trimmed == "loop"
+        || trimmed.starts_with("loop ")
+        || trimmed.starts_with("match ")
+        || trimmed.starts_with("switch ")
+        || trimmed.starts_with("return")
+        || trimmed.starts_with("break")
+        || trimmed.starts_with("continue")
+    {
+        return "keyword.control".to_string();
+    }
+
+    "source".to_string()
 }
 
 impl PolyfontLanguageServer {
@@ -192,6 +354,12 @@ impl PolyfontLanguageServer {
             }
             Err(e) => {
                 warn!("failed to load config: {e}");
+                self.client
+                    .show_message(
+                        MessageType::WARNING,
+                        format!("polyfont: failed to load config: {e}. Font assignments disabled."),
+                    )
+                    .await;
             }
         }
     }
@@ -205,9 +373,8 @@ impl PolyfontLanguageServer {
             let Some(doc) = state.documents.get(uri) else {
                 return;
             };
-            // Use cached tokens if available, otherwise re-tokenize.
             let tokens = if doc.cached_tokens.is_empty() {
-                tokenize_document(&doc.text, uri)
+                tokenize_document(&doc.text, uri, Some(&doc.language_id))
             } else {
                 doc.cached_tokens.clone()
             };
@@ -242,7 +409,7 @@ impl PolyfontLanguageServer {
             let Some(doc) = state.documents.get(&params.uri) else {
                 return Ok(None);
             };
-            let tokens = tokenize_document(&doc.text, &params.uri);
+            let tokens = tokenize_document(&doc.text, &params.uri, Some(&doc.language_id));
             let entries = build_assignment_entries(engine, &tokens);
             drop(state);
             entries
@@ -284,7 +451,6 @@ struct FontAssignmentsRequestParams {
 
 #[derive(Debug, Deserialize)]
 struct SuggestFontsParams {
-    /// Optional language ID to tailor suggestions.
     language: Option<String>,
 }
 
@@ -404,150 +570,6 @@ static FONT_PAIRINGS: &[(&str, &str, &str, &str)] = &[
 
 static TOKEN_PARSER: LazyLock<TokenParser> = LazyLock::new(TokenParser::new);
 
-fn language_id_from_uri(uri: &str) -> &str {
-    let path = uri.split('/').next_back().unwrap_or(uri);
-    match path.split('.').next_back().unwrap_or("") {
-        "rs" => "rust",
-        "ts" => "typescript",
-        "tsx" => "typescript",
-        "js" => "javascript",
-        "jsx" => "javascript",
-        "py" => "python",
-        "go" => "go",
-        "c" => "c",
-        "cpp" | "cc" | "cxx" | "h" | "hpp" => "cpp",
-        "json" => "json",
-        "toml" => "toml",
-        "lua" => "lua",
-        _ => "unknown",
-    }
-}
-
-fn tokenize_document(text: &str, uri: &str) -> Vec<polyfont_core::TokenInfo> {
-    let lang = language_id_from_uri(uri);
-
-    match TOKEN_PARSER.parse_tokens(text, lang, OffsetEncoding::Utf16) {
-        Ok(tokens) if !tokens.is_empty() => {
-            info!(
-                language = lang,
-                method = "tree-sitter",
-                "tokenized document"
-            );
-            tokens
-        }
-        Ok(_) => {
-            info!(
-                language = lang,
-                method = "naive",
-                reason = "tree-sitter returned no tokens",
-                "tokenized document"
-            );
-            tokenize_document_naive(text)
-        }
-        Err(e) => {
-            info!(
-                language = lang,
-                method = "naive",
-                reason = %e,
-                "tokenized document"
-            );
-            tokenize_document_naive(text)
-        }
-    }
-}
-
-#[allow(clippy::cast_possible_truncation)]
-fn tokenize_document_naive(text: &str) -> Vec<polyfont_core::TokenInfo> {
-    let mut tokens = Vec::new();
-    for (line_idx, line) in text.lines().enumerate() {
-        let leading = line.len() - line.trim_start().len();
-        let trimmed = line.trim();
-
-        if trimmed.is_empty() {
-            continue;
-        }
-
-        let scope = classify_line(trimmed);
-        let end_char = (leading + trimmed.len()) as u32;
-
-        tokens.push(polyfont_core::TokenInfo {
-            text: trimmed.to_string(),
-            range: polyfont_core::Range {
-                start: polyfont_core::Position {
-                    line: line_idx as u32,
-                    column: leading as u32,
-                },
-                end: polyfont_core::Position {
-                    line: line_idx as u32,
-                    column: end_char,
-                },
-            },
-            scope,
-            modifiers: Vec::new(),
-        });
-    }
-    tokens
-}
-
-fn classify_line(line: &str) -> String {
-    let trimmed = line.trim();
-
-    if trimmed.starts_with("///") || trimmed.starts_with("//") || trimmed.starts_with('#') {
-        return "comment".to_string();
-    }
-    if trimmed.starts_with('"') || trimmed.starts_with('\'') || trimmed.starts_with('`') {
-        return "string".to_string();
-    }
-    if trimmed.starts_with("fn ")
-        || trimmed.starts_with("function ")
-        || trimmed.starts_with("def ")
-        || trimmed.starts_with("pub fn ")
-        || trimmed.starts_with("async fn ")
-    {
-        return "entity.name.function".to_string();
-    }
-    if trimmed.starts_with("let ")
-        || trimmed.starts_with("const ")
-        || trimmed.starts_with("var ")
-        || trimmed.starts_with("mut ")
-        || trimmed.starts_with("let mut ")
-    {
-        return "variable".to_string();
-    }
-    if trimmed.starts_with("struct ")
-        || trimmed.starts_with("enum ")
-        || trimmed.starts_with("class ")
-        || trimmed.starts_with("interface ")
-        || trimmed.starts_with("type ")
-        || trimmed.starts_with("impl ")
-        || trimmed.starts_with("trait ")
-    {
-        return "entity.name.type".to_string();
-    }
-    if trimmed.starts_with("use ")
-        || trimmed.starts_with("import ")
-        || trimmed.starts_with("from ")
-        || trimmed.starts_with("mod ")
-    {
-        return "keyword".to_string();
-    }
-    if trimmed.starts_with("if ")
-        || trimmed.starts_with("else")
-        || trimmed.starts_with("for ")
-        || trimmed.starts_with("while ")
-        || trimmed.starts_with("loop ")
-        || trimmed.starts_with("match ")
-        || trimmed.starts_with("switch ")
-        || trimmed.starts_with("return")
-        || trimmed.starts_with("break")
-        || trimmed.starts_with("continue")
-    {
-        return "keyword.control".to_string();
-    }
-
-    "source".to_string()
-}
-
 #[tower_lsp::async_trait]
 impl LanguageServer for PolyfontLanguageServer {
     async fn initialize(&self, params: InitializeParams) -> LspResult<InitializeResult> {
@@ -598,6 +620,10 @@ impl LanguageServer for PolyfontLanguageServer {
     async fn shutdown(&self) -> LspResult<()> {
         info!("shutting down polyfont LSP server");
         let mut state = self.state.write().await;
+        for handle in state.debounce_tasks.drain() {
+            handle.1.abort();
+        }
+        state.pending_text.clear();
         state.engine = None;
         state.config = None;
         state.documents.clear();
@@ -607,10 +633,11 @@ impl LanguageServer for PolyfontLanguageServer {
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let uri = params.text_document.uri.to_string();
+        let language_id = params.text_document.language_id.clone();
         info!("document opened: {uri}");
 
         let text = params.text_document.text.clone();
-        let tokens = tokenize_document(&text, &uri);
+        let tokens = tokenize_document(&text, &uri, Some(&language_id));
 
         {
             let mut state = self.state.write().await;
@@ -619,6 +646,7 @@ impl LanguageServer for PolyfontLanguageServer {
                 DocumentState {
                     version: params.text_document.version,
                     text,
+                    language_id,
                     cached_tokens: tokens,
                 },
             );
@@ -631,23 +659,75 @@ impl LanguageServer for PolyfontLanguageServer {
         let uri = params.text_document.uri.to_string();
 
         if let Some(change) = params.content_changes.into_iter().last() {
-            let text = change.text.clone();
-            let tokens = tokenize_document(&text, &uri);
-            let mut state = self.state.write().await;
-            if let Some(doc) = state.documents.get_mut(&uri) {
-                doc.text = text;
-                doc.version = params.text_document.version;
-                doc.cached_tokens = tokens;
+            {
+                let mut state = self.state.write().await;
+                state.pending_text.insert(uri.clone(), change.text.clone());
+                if let Some(handle) = state.debounce_tasks.remove(&uri) {
+                    handle.abort();
+                }
+                let state_arc = self.state.clone();
+                let client = self.client.clone();
+                let uri_clone = uri.clone();
+                let handle = tokio::spawn(async move {
+                    sleep(Duration::from_millis(16)).await;
+                    let (tokens, has_engine) = {
+                        let mut state = state_arc.write().await;
+                        let text = match state.pending_text.remove(&uri_clone) {
+                            Some(t) => t,
+                            None => return,
+                        };
+                        let has_engine = state.engine.is_some();
+                        let tokens = if let Some(doc) = state.documents.get_mut(&uri_clone) {
+                            let lang_id = doc.language_id.clone();
+                            let tok = tokenize_document(&text, &uri_clone, Some(&lang_id));
+                            doc.text = text;
+                            doc.cached_tokens = tok.clone();
+                            tok
+                        } else {
+                            Vec::new()
+                        };
+                        (tokens, has_engine)
+                    };
+                    if !has_engine || tokens.is_empty() {
+                        return;
+                    }
+                    let entries = {
+                        let state = state_arc.read().await;
+                        let Some(engine) = &state.engine else {
+                            return;
+                        };
+                        let Some(doc) = state.documents.get(&uri_clone) else {
+                            return;
+                        };
+                        build_assignment_entries(engine, &doc.cached_tokens)
+                    };
+                    if entries.is_empty() {
+                        return;
+                    }
+                    let notification = FontAssignmentNotification {
+                        uri: uri_clone,
+                        assignments: entries,
+                    };
+                    client
+                        .send_notification::<PolyfontFontAssignments>(notification)
+                        .await;
+                });
+                state.debounce_tasks.insert(uri.clone(), handle);
+                if let Some(doc) = state.documents.get_mut(&uri) {
+                    doc.version = params.text_document.version;
+                }
             }
         }
-
-        self.publish_assignments(&uri).await;
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
         let uri = params.text_document.uri.to_string();
         info!("document closed: {uri}");
         let mut state = self.state.write().await;
+        if let Some(handle) = state.debounce_tasks.remove(&uri) {
+            handle.abort();
+        }
+        state.pending_text.remove(&uri);
         state.documents.remove(&uri);
     }
 
@@ -868,6 +948,8 @@ mod tests {
         assert!(state.config.is_none());
         assert!(state.workspace_root.is_none());
         assert!(state.documents.is_empty());
+        assert!(state.debounce_tasks.is_empty());
+        assert!(state.pending_text.is_empty());
     }
 
     #[test]
@@ -918,5 +1000,202 @@ mod tests {
             assert!(!reason.is_empty(), "reason should not be empty");
             assert!(!category.is_empty(), "category should not be empty");
         }
+    }
+
+    #[test]
+    fn test_utf16_column_ascii() {
+        assert_eq!(str_len_utf16("hello"), 5);
+    }
+
+    #[test]
+    fn test_utf16_column_cjk() {
+        assert_eq!(str_len_utf16("你好"), 2);
+    }
+
+    #[test]
+    fn test_utf16_column_emoji() {
+        assert_eq!(str_len_utf16("🎉"), 2);
+    }
+
+    #[test]
+    fn test_utf16_column_mixed() {
+        assert_eq!(str_len_utf16("fn 代"), 4);
+    }
+
+    #[test]
+    fn test_utf16_column_combining() {
+        assert_eq!(str_len_utf16("e\u{0301}"), 2);
+    }
+
+    #[test]
+    fn test_utf16_column_empty() {
+        assert_eq!(str_len_utf16(""), 0);
+    }
+
+    #[test]
+    fn test_tokenize_naive_utf16_columns() {
+        let tokens = tokenize_document_naive("// 你好");
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].scope, "comment");
+        assert_eq!(tokens[0].range.start.column, 0);
+        // "// " = 3 UTF-16 + "你好" = 2 UTF-16 = end column 5
+        assert_eq!(tokens[0].range.end.column, 5);
+    }
+
+    #[test]
+    fn test_tokenize_naive_utf16_leading_spaces() {
+        let tokens = tokenize_document_naive("    fn main()");
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].range.start.column, 4);
+    }
+
+    #[test]
+    fn test_tokenize_document_with_language_override() {
+        let tokens = tokenize_document("# comment", "file:///tmp/test.rs", Some("python"));
+        assert!(!tokens.is_empty());
+    }
+
+    #[test]
+    fn test_tokenize_document_falls_back_to_uri() {
+        let tokens = tokenize_document("// test", "file:///tmp/test.rs", None);
+        assert!(!tokens.is_empty());
+    }
+
+    #[test]
+    fn test_build_assignment_entries_empty_tokens() {
+        let engine = ScopeMatchEngine::from_rules(vec![FontRule {
+            scope: "keyword".to_string(),
+            font: FontSpec::default_font("Test"),
+        }]);
+        let entries = build_assignment_entries(&engine, &[]);
+        assert!(entries.is_empty());
+    }
+
+    #[test]
+    fn test_build_assignment_entries_all_match() {
+        let engine = ScopeMatchEngine::from_rules(vec![
+            FontRule {
+                scope: "keyword".to_string(),
+                font: FontSpec::default_font("A"),
+            },
+            FontRule {
+                scope: "comment".to_string(),
+                font: FontSpec::default_font("B"),
+            },
+        ]);
+        let tokens = vec![
+            TokenInfo {
+                text: "fn".into(),
+                range: Range {
+                    start: Position { line: 0, column: 0 },
+                    end: Position { line: 0, column: 2 },
+                },
+                scope: "keyword".into(),
+                modifiers: vec![],
+            },
+            TokenInfo {
+                text: "// hi".into(),
+                range: Range {
+                    start: Position { line: 1, column: 0 },
+                    end: Position { line: 1, column: 4 },
+                },
+                scope: "comment".into(),
+                modifiers: vec![],
+            },
+        ];
+        let entries = build_assignment_entries(&engine, &tokens);
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].font.family, "A");
+        assert_eq!(entries[1].font.family, "B");
+    }
+
+    #[test]
+    fn test_build_assignment_entries_partial_match() {
+        let engine = ScopeMatchEngine::from_rules(vec![FontRule {
+            scope: "keyword".to_string(),
+            font: FontSpec::default_font("A"),
+        }]);
+        let tokens = vec![
+            TokenInfo {
+                text: "fn".into(),
+                range: Range {
+                    start: Position { line: 0, column: 0 },
+                    end: Position { line: 0, column: 2 },
+                },
+                scope: "keyword".into(),
+                modifiers: vec![],
+            },
+            TokenInfo {
+                text: "x".into(),
+                range: Range {
+                    start: Position { line: 1, column: 0 },
+                    end: Position { line: 1, column: 1 },
+                },
+                scope: "variable".into(),
+                modifiers: vec![],
+            },
+        ];
+        let entries = build_assignment_entries(&engine, &tokens);
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].scope, "keyword");
+    }
+
+    #[test]
+    fn test_font_info_defaults() {
+        let spec = FontSpec {
+            family: "Mono".into(),
+            fallbacks: vec![],
+            weight: FontWeight::Regular,
+            style: FontStyle::Normal,
+            size: None,
+            axes: vec![],
+        };
+        let info = FontInfo::from(&spec);
+        assert_eq!(info.family, "Mono");
+        assert!(info.fallbacks.is_empty());
+        assert_eq!(info.weight, "regular");
+        assert_eq!(info.style, "normal");
+    }
+
+    #[test]
+    fn test_language_id_rust_with_path() {
+        assert_eq!(
+            language_id_from_uri("file:///home/user/project/src/lib.rs"),
+            "rust"
+        );
+    }
+
+    #[test]
+    fn test_language_id_windows_path() {
+        assert_eq!(
+            language_id_from_uri("file:///C:/Users/test/main.rs"),
+            "rust"
+        );
+    }
+
+    #[test]
+    fn test_language_id_vscode_untitled() {
+        assert_eq!(language_id_from_uri("untitled:Untitled-1"), "unknown");
+    }
+
+    #[test]
+    fn test_language_id_no_extension() {
+        assert_eq!(language_id_from_uri("Makefile"), "unknown");
+    }
+
+    #[test]
+    fn test_classify_match_and_switch() {
+        assert_eq!(classify_line("match x"), "keyword.control");
+        assert_eq!(classify_line("switch (x)"), "keyword.control");
+    }
+
+    #[test]
+    fn test_classify_loop_keyword() {
+        assert_eq!(classify_line("loop"), "keyword.control");
+    }
+
+    #[test]
+    fn test_classify_empty_line() {
+        assert_eq!(classify_line(""), "source");
     }
 }

@@ -5,9 +5,10 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
-keywords = ["font", "theme", "syntax-highlighting", "textmate"]
-categories = ["text-editors", "development-tools"]
-description = "Theme import, export, and registry for polyfont"
+documentation.workspace = true
+keywords = ["theme", "font", "syntax-highlighting", "import", "export"]
+categories = ["text-processing"]
+description = "Theme import, export, and built-in registry for polyfont"
 
 [features]
 default = []

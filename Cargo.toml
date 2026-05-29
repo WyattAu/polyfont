@@ -42,3 +42,4 @@ clap = { version = "4", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 tower-lsp = "0.20"
 walkdir = "2"
+criterion = "0.5"

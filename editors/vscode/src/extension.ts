@@ -67,12 +67,12 @@ function findConfigFile(): string | undefined {
   return undefined;
 }
 
-function isBoldWeight(weight: FontWeight | undefined): boolean {
+export function isBoldWeight(weight: FontWeight | undefined): boolean {
   if (!weight) return false;
   return ["bold", "semi-bold", "extra-bold", "black"].includes(weight);
 }
 
-function buildTextMateRules(config: PolyfontConfig): object[] {
+export function buildTextMateRules(config: PolyfontConfig): object[] {
   const rules: object[] = [];
 
   for (const rule of config.rules) {
