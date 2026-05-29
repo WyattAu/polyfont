@@ -204,7 +204,7 @@ fn cmd_check(config: &PolyfontConfig) {
     }
 }
 
-fn cmd_vscode(config: &PolyfontConfig, output: Option<&PathBuf>) -> Result<()> {
+fn cmd_vscode(config: &PolyfontConfig, output: Option<&PathBuf>) -> Result<String> {
     let mut rules_json: Vec<serde_json::Value> = Vec::new();
 
     for rule in &config.rules {
@@ -267,16 +267,13 @@ fn cmd_vscode(config: &PolyfontConfig, output: Option<&PathBuf>) -> Result<()> {
             };
 
             let json = serde_json::to_string_pretty(&doc)?;
-            std::fs::write(output_path, json)
+            std::fs::write(output_path, &json)
                 .with_context(|| format!("failed to write {}", output_path.display()))?;
             eprintln!("Written to {}", output_path.display());
+            Ok(json)
         }
-        None => {
-            println!("{}", serde_json::to_string_pretty(&snippet)?);
-        }
+        None => Ok(serde_json::to_string_pretty(&snippet)?),
     }
-
-    Ok(())
 }
 
 fn cmd_neovim(config: &PolyfontConfig) {
@@ -491,7 +488,7 @@ fn cmd_font_install(families: &[String]) -> Result<()> {
     Ok(())
 }
 
-fn cmd_font_preview(family: &str, text: &str) -> Result<()> {
+fn cmd_font_preview(family: &str, text: &str) -> Result<String> {
     let escaped = text
         .replace('&', "&amp;")
         .replace('<', "&lt;")
@@ -510,8 +507,7 @@ fn cmd_font_preview(family: &str, text: &str) -> Result<()> {
     ]
     .join("\n");
 
-    println!("{svg}");
-    Ok(())
+    Ok(svg)
 }
 
 fn cmd_theme_import(path: &PathBuf, mapping_path: Option<&PathBuf>) -> Result<()> {
@@ -583,7 +579,11 @@ fn main() -> Result<()> {
         }
         Commands::Vscode { output } => {
             let config = load_config(cli.config.as_ref())?;
-            cmd_vscode(&config, output.as_ref())
+            let json = cmd_vscode(&config, output.as_ref())?;
+            if output.is_none() {
+                println!("{json}");
+            }
+            Ok(())
         }
         Commands::Neovim => {
             let config = load_config(cli.config.as_ref())?;
@@ -604,7 +604,11 @@ fn main() -> Result<()> {
             FontAction::List => cmd_font_list(),
             FontAction::Check { family } => cmd_font_check(&family),
             FontAction::Install { family } => cmd_font_install(&family),
-            FontAction::Preview { family, text } => cmd_font_preview(&family, &text),
+            FontAction::Preview { family, text } => {
+                let svg = cmd_font_preview(&family, &text)?;
+                println!("{svg}");
+                Ok(())
+            }
         },
         Commands::Theme { action } => match action {
             ThemeAction::List => {
@@ -619,5 +623,217 @@ fn main() -> Result<()> {
                 cmd_theme_export(&config, &format, output.as_ref())
             }
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use polyfont_config::{DefaultFontConfig, FontConfig, RuleConfig};
+    use polyfont_core::{FontStyle, FontWeight};
+
+    fn sample_config() -> PolyfontConfig {
+        PolyfontConfig {
+            version: 1,
+            default: Some(DefaultFontConfig {
+                family: "Fira Code".to_string(),
+                fallbacks: vec!["monospace".to_string()],
+                weight: FontWeight::Regular,
+                style: FontStyle::Normal,
+                size: None,
+                axes: vec![],
+            }),
+            rules: vec![
+                RuleConfig {
+                    scope: "keyword".to_string(),
+                    font: FontConfig {
+                        family: "Maple Mono".to_string(),
+                        fallbacks: vec![],
+                        weight: FontWeight::Bold,
+                        style: FontStyle::Normal,
+                        size: None,
+                        axes: vec![],
+                    },
+                },
+                RuleConfig {
+                    scope: "comment".to_string(),
+                    font: FontConfig {
+                        family: "IBM Plex Mono".to_string(),
+                        fallbacks: vec![],
+                        weight: FontWeight::Regular,
+                        style: FontStyle::Italic,
+                        size: None,
+                        axes: vec![],
+                    },
+                },
+            ],
+        }
+    }
+
+    #[test]
+    fn test_weight_label_all_variants() {
+        assert_eq!(weight_label(FontWeight::Thin), "thin");
+        assert_eq!(weight_label(FontWeight::ExtraLight), "extra-light");
+        assert_eq!(weight_label(FontWeight::Light), "light");
+        assert_eq!(weight_label(FontWeight::Regular), "regular");
+        assert_eq!(weight_label(FontWeight::Medium), "medium");
+        assert_eq!(weight_label(FontWeight::SemiBold), "semi-bold");
+        assert_eq!(weight_label(FontWeight::Bold), "bold");
+        assert_eq!(weight_label(FontWeight::ExtraBold), "extra-bold");
+        assert_eq!(weight_label(FontWeight::Black), "black");
+    }
+
+    #[test]
+    fn test_style_label_all_variants() {
+        assert_eq!(style_label(FontStyle::Normal), "normal");
+        assert_eq!(style_label(FontStyle::Italic), "italic");
+        assert_eq!(style_label(FontStyle::Oblique), "oblique");
+    }
+
+    #[test]
+    fn test_weight_css_all_variants() {
+        assert_eq!(weight_css(FontWeight::Thin), "100");
+        assert_eq!(weight_css(FontWeight::ExtraLight), "200");
+        assert_eq!(weight_css(FontWeight::Light), "300");
+        assert_eq!(weight_css(FontWeight::Regular), "normal");
+        assert_eq!(weight_css(FontWeight::Medium), "500");
+        assert_eq!(weight_css(FontWeight::SemiBold), "600");
+        assert_eq!(weight_css(FontWeight::Bold), "bold");
+        assert_eq!(weight_css(FontWeight::ExtraBold), "800");
+        assert_eq!(weight_css(FontWeight::Black), "900");
+    }
+
+    #[test]
+    fn test_font_family_with_fallbacks_single() {
+        assert_eq!(font_family_with_fallbacks("Fira Code", &[]), "Fira Code");
+    }
+
+    #[test]
+    fn test_font_family_with_fallbacks_multiple() {
+        assert_eq!(
+            font_family_with_fallbacks(
+                "Fira Code",
+                &["monospace".to_string(), "serif".to_string()]
+            ),
+            "Fira Code, monospace, serif"
+        );
+    }
+
+    #[test]
+    fn test_cmd_font_preview_valid_svg() {
+        let result = cmd_font_preview("Fira Code", "hello world");
+        assert!(result.is_ok());
+        let svg = result.unwrap();
+        assert!(svg.contains("<?xml"));
+        assert!(svg.contains("<svg"));
+        assert!(svg.contains("font-family=\"Fira Code, monospace\""));
+        assert!(svg.contains("hello world"));
+        assert!(svg.contains("</svg>"));
+    }
+
+    #[test]
+    fn test_cmd_font_preview_escapes_html() {
+        let result = cmd_font_preview("Mono", "a < b & c > d");
+        assert!(result.is_ok());
+        let svg = result.unwrap();
+        assert!(svg.contains("a &lt; b &amp; c &gt; d"));
+        assert!(!svg.contains("a < b"));
+    }
+
+    #[test]
+    fn test_cmd_font_preview_utf8_width() {
+        let result = cmd_font_preview("Mono", "test");
+        assert!(result.is_ok());
+        let svg_latin = result.unwrap();
+
+        let result2 = cmd_font_preview("Mono", "tëst");
+        assert!(result2.is_ok());
+        let svg_utf8 = result2.unwrap();
+
+        assert!(
+            svg_latin.contains("width=\"36\""),
+            "4 latin chars * 9 = 36: {svg_latin}"
+        );
+        assert!(
+            svg_utf8.contains("width=\"36\""),
+            "4 utf8 chars * 9 = 36: {svg_utf8}"
+        );
+    }
+
+    #[test]
+    fn test_cmd_neovim_output() {
+        let config = sample_config();
+        assert_eq!(config.rules.len(), 2);
+        assert_eq!(config.rules[0].scope, "keyword");
+        assert_eq!(config.rules[0].font.family, "Maple Mono");
+        assert_eq!(config.rules[0].font.weight, FontWeight::Bold);
+        assert_eq!(config.rules[1].font.style, FontStyle::Italic);
+    }
+
+    #[test]
+    fn test_cmd_vscode_output_no_file() {
+        let config = sample_config();
+        let result = cmd_vscode(&config, None);
+        assert!(result.is_ok());
+        let json_str = result.unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+        let rules = parsed["editor.tokenColorCustomizations"]["textMateRules"]
+            .as_array()
+            .unwrap();
+        assert_eq!(rules.len(), 2);
+        assert_eq!(rules[0]["scope"], "keyword");
+        assert_eq!(rules[0]["settings"]["fontFamily"], "Maple Mono");
+        assert_eq!(rules[1]["settings"]["fontFamily"], "IBM Plex Mono");
+    }
+
+    #[test]
+    fn test_cmd_vscode_output_to_file() {
+        let dir = std::env::temp_dir().join("polyfont_test_vscode");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let output_path = dir.join("settings.json");
+
+        let config = sample_config();
+        let result = cmd_vscode(&config, Some(&output_path));
+        assert!(result.is_ok());
+
+        let content = std::fs::read_to_string(&output_path).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
+        assert!(parsed["editor.tokenColorCustomizations"]["textMateRules"].is_array());
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn test_cmd_vscode_merges_existing() {
+        let dir = std::env::temp_dir().join("polyfont_test_vscode_merge");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let output_path = dir.join("settings.json");
+
+        let existing = r#"{"editor.fontSize": 14}"#;
+        std::fs::write(&output_path, existing).unwrap();
+
+        let config = sample_config();
+        let result = cmd_vscode(&config, Some(&output_path));
+        assert!(result.is_ok());
+
+        let content = std::fs::read_to_string(&output_path).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
+        assert_eq!(parsed["editor.fontSize"], 14);
+        assert!(parsed["editor.tokenColorCustomizations"]["textMateRules"].is_array());
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn test_cmd_theme_list() {
+        cmd_theme_list();
+    }
+
+    #[test]
+    fn test_load_config_missing_file() {
+        let result = load_config(Some(&PathBuf::from("/nonexistent/path/.polyfont.toml")));
+        assert!(result.is_err());
     }
 }
