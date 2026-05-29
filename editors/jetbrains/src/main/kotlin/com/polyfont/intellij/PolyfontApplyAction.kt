@@ -16,24 +16,31 @@ class PolyfontApplyAction : AnAction() {
 
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
-        val rules = loadRulesFromConfig(project)
-        if (rules.isEmpty()) {
+        val configRules = loadRulesFromConfig(project)
+        if (configRules.isEmpty() && PolyfontSettings.getInstance().fontRules.isEmpty()) {
             notify(project, "No font rules found in .polyfont.toml", NotificationType.WARNING)
             return
         }
 
-        val merged = rules + PolyfontSettings.getInstance().fontRules
+        val settingsRules = PolyfontSettings.getInstance().fontRules.map { (scope, fontFamily) ->
+            PolyfontConfigParser.Rule(scope, fontFamily)
+        }
+        val merged = configRules + settingsRules
         val scheme = EditorColorsManager.getInstance().globalScheme
         var applied = 0
 
-        for ((scope, fontFamily) in merged) {
-            val key = TextAttributesKey.createTextAttributesKey("POLYFONT_$scope")
+        // TODO: Per-scope font families are not supported by TextAttributes (only bold/italic flags).
+        //  To apply actual different fonts per scope, a custom HighlightVisitor or EditorNotificationProvider
+        //  would be needed. For now, we set the font type (plain/bold/italic/bold-italic) based on weight/style.
+        for (rule in merged) {
+            val key = TextAttributesKey.createTextAttributesKey("POLYFONT_${rule.scope}")
+            val fontType = computeFontType(rule.weight, rule.style)
             val attrs = TextAttributes(
                 scheme.defaultForeground,
                 null,
                 null,
                 null,
-                scheme.getFontPreferences().getFontFamily().let { 0 },
+                fontType,
             )
             val existing = scheme.getAttributes(key)
             if (existing != null) {
@@ -46,10 +53,21 @@ class PolyfontApplyAction : AnAction() {
         notify(project, "Applied $applied polyfont font rule(s)", NotificationType.INFORMATION)
     }
 
-    private fun loadRulesFromConfig(project: Project): Map<String, String> {
-        val baseDir = project.basePath ?: return emptyMap()
+    private fun computeFontType(weight: String?, style: String?): Int {
+        val bold = weight != null && weight.lowercase() in listOf("bold", "700", "800", "900")
+        val italic = style != null && style.lowercase() in listOf("italic", "oblique")
+        return when {
+            bold && italic -> 3
+            bold -> 1
+            italic -> 2
+            else -> 0
+        }
+    }
+
+    private fun loadRulesFromConfig(project: Project): List<PolyfontConfigParser.Rule> {
+        val baseDir = project.basePath ?: return emptyList()
         val configFile = File(baseDir, ".polyfont.toml")
-        if (!configFile.exists()) return emptyMap()
+        if (!configFile.exists()) return emptyList()
         return PolyfontConfigParser.parse(configFile.readText())
     }
 

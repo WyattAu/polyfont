@@ -59,55 +59,6 @@ local function resolve_hl_for_scope(scope, rules)
   return nil
 end
 
-local function apply_to_buffer(bufnr, config)
-  bufnr = bufnr or 0
-  if not vim.api.nvim_buf_is_loaded(bufnr) then
-    return
-  end
-
-  local ok, parser = pcall(vim.treesitter.get_parser, bufnr)
-  if not ok or not parser then
-    return
-  end
-
-  local ns = vim.api.nvim_create_namespace("polyfont")
-  vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
-
-  local lang = parser:lang()
-  local ok2, query = pcall(vim.treesitter.query.parse, lang, vim.treesitter.query.get(lang, "highlights"))
-  if not ok2 or not query then
-    return
-  end
-
-  local tree = parser:parse()[1]
-  if not tree then
-    return
-  end
-
-  local rules = config.rules or {}
-  if config.default then
-    table.insert(rules, { scope = "*", font = config.default })
-  end
-
-  for capture_id, node in query:iter_captures(tree:root(), bufnr) do
-    local capture_name = query.captures[capture_id]
-    local scope = ts.scope_from_capture(capture_name)
-    if scope then
-      local hl_group = resolve_hl_for_scope(scope, rules)
-      if hl_group then
-        local start_row, start_col, end_row, end_col = node:range()
-        pcall(vim.api.nvim_buf_set_extmark, bufnr, ns, start_row, start_col, {
-          end_row = end_row,
-          end_col = end_col,
-          hl_group = hl_group,
-          priority = 120,
-          ephemeral = true,
-        })
-      end
-    end
-  end
-end
-
 function M.setup_decoration_provider(bufnr, config)
   bufnr = bufnr or 0
 
@@ -240,7 +191,7 @@ end
 function M.apply(config, bufnr)
   bufnr = bufnr or 0
 
-  M._rules = config.rules or {}
+  M._rules = vim.list_extend({}, config.rules or {})
   if config.default then
     table.insert(M._rules, { scope = "*", font = config.default })
   end

@@ -1,5 +1,10 @@
 # Polyfont for Zed Editor
 
+> **Placeholder — Not Functional**
+> This extension is a non-functional stub. Zed's extension API does not yet
+> expose per-scope `font_family` overrides. The code compiles but returns an
+> error for every command. Do not install this expecting working behaviour.
+
 ## Current Status
 
 Zed does not yet support per-scope font families in its stable public API. Zed's GPUI rendering engine is architecturally capable of per-highlight font family assignment, but the extension API does not currently expose per-scope `font_family` overrides as a stable feature.

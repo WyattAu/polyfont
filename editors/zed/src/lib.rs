@@ -12,11 +12,10 @@ impl zed::Extension for PolyfontExtension {
         command: zed::LanguageCommand,
         _worktree: &zed::Worktree,
     ) -> Result<serde_json::Value> {
-        match command {
-            zed::LanguageCommand::Apply => {
-                Err("polyfont: per-scope font overrides are not yet supported by Zed's extension API. Use 'polyfont vscode' to generate JSON and adapt it into a Zed theme manually.".into())
-            }
-        }
+        Err(format!(
+            "polyfont: command '{}' is not supported. Per-scope font overrides are not yet available in Zed's extension API. Use 'polyfont vscode' to generate JSON and adapt it into a Zed theme manually.",
+            command.command
+        ).into())
     }
 }
 

@@ -76,7 +76,7 @@ def _build_theme_entries(config):
         font_face = _build_font_face(family, weight, style)
         entries.append(
             {
-                "class": "label",
+                "class": "invisible",
                 "scope": scope,
                 "settings": {"font.face": font_face},
             }
@@ -85,7 +85,9 @@ def _build_theme_entries(config):
     if fallbacks:
         entries.append(
             {
-                "class": "label",
+                # No "scope" key — intentional: acts as the default fallback
+                # in .sublime-theme when no other entry's scope matches.
+                "class": "invisible",
                 "settings": {
                     "font.face": ", ".join(
                         [default_face] + fallbacks

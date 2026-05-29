@@ -1,3 +1,5 @@
+local uv = vim.uv or vim.loop
+
 local M = {}
 
 local config_mod = require("polyfont.config")
@@ -109,7 +111,7 @@ function M.watch(path)
   local dir = vim.fn.fnamemodify(path, ":h")
   local basename = vim.fn.fnamemodify(path, ":t")
 
-  M._watcher = vim.loop.new_fs_event()
+  M._watcher = uv.new_fs_event()
   if not M._watcher then
     return
   end
@@ -122,7 +124,7 @@ function M.watch(path)
       if M._watcher_timer then
         M._watcher_timer:stop()
       end
-      M._watcher_timer = vim.loop.new_timer()
+      M._watcher_timer = uv.new_timer()
       M._watcher_timer:start(200, 0, function()
         vim.schedule(function()
           M.reload()
