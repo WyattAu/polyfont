@@ -8,29 +8,42 @@ use polyfont_config::{DefaultFontConfig, FontConfig};
 const MAX_FONT_FAMILIES: usize = 6;
 const MIN_FONT_SIZE_PT: f32 = 8.0;
 
+/// A single accessibility concern found during analysis.
 #[derive(Debug, Clone, PartialEq)]
 pub enum AccessibilityIssue {
+    /// Config uses fonts with potentially low visual contrast.
     LowContrastFonts,
+    /// Two font families have similar names and may be visually alike.
     SimilarFonts(String, String),
+    /// A font specification has no fallback families.
     MissingFallback,
+    /// The number of distinct font families exceeds the recommended limit.
     TooManyFonts(usize),
+    /// A font size is below the recommended minimum.
     VerySmallSize(f32),
 }
 
+/// Full accessibility analysis report.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AccessibilityReport {
     pub issues: Vec<AccessibilityIssue>,
     pub score: f32,
 }
 
+/// Classification of font families by design characteristics.
 #[derive(Debug, Clone, PartialEq)]
 pub enum FontCategory {
+    /// Designed for dyslexic readers.
     DyslexiaFriendly,
+    /// Optimized for general legibility.
     HighLegibility,
+    /// Supports variable weight axes.
     VariableWeight,
+    /// Fixed-width / monospace.
     Monospace,
 }
 
+/// A font recommendation for a specific accessibility need.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FontRecommendation {
     pub family: String,
@@ -38,15 +51,18 @@ pub struct FontRecommendation {
     pub category: FontCategory,
 }
 
+/// Result of visual contrast analysis between two fonts.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ContrastResult {
     pub fonts_similar: bool,
     pub recommendation: Option<String>,
 }
 
+/// Analyzes font configurations for accessibility concerns.
 pub struct AccessibilityChecker;
 
 impl AccessibilityChecker {
+    /// Analyze a config for accessibility issues.
     pub fn check_config(config: &PolyfontConfig) -> AccessibilityReport {
         let mut issues = Vec::new();
 
@@ -87,6 +103,7 @@ impl AccessibilityChecker {
     }
 
     #[must_use]
+    /// Return font recommendations optimized for dyslexic readers.
     pub fn recommend_dyslexia_fonts() -> Vec<FontRecommendation> {
         vec![
             FontRecommendation {
@@ -121,6 +138,7 @@ impl AccessibilityChecker {
     }
 
     #[must_use]
+    /// Check visual contrast between two font families.
     pub fn check_contrast_between_fonts(font1: &str, font2: &str) -> ContrastResult {
         if names_are_similar(font1, font2) {
             return ContrastResult {

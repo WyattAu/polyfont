@@ -17,12 +17,14 @@ use tower_lsp::lsp_types::{
 use tower_lsp::{Client, ClientSocket, LanguageServer, LspService};
 use tracing::{info, warn};
 
+/// LSP notification payload sent when font assignments change for a document.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FontAssignmentNotification {
     pub uri: String,
     pub assignments: Vec<FontAssignmentEntry>,
 }
 
+/// A single scope-to-font assignment within a document.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FontAssignmentEntry {
     pub scope: String,
@@ -30,18 +32,21 @@ pub struct FontAssignmentEntry {
     pub font: FontInfo,
 }
 
+/// LSP-compatible text range.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LspRange {
     pub start: LspPosition,
     pub end: LspPosition,
 }
 
+/// LSP-compatible position (zero-based line and character).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LspPosition {
     pub line: u32,
     pub character: u32,
 }
 
+/// Serializable font specification for LSP communication.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FontInfo {
     pub family: String,
@@ -95,6 +100,7 @@ impl tower_lsp::lsp_types::notification::Notification for PolyfontFontAssignment
     const METHOD: &'static str = "polyfont/fontAssignments";
 }
 
+/// LSP server providing per-token font assignment for polyfont-aware editors.
 pub struct PolyfontLanguageServer {
     client: Client,
     state: Arc<RwLock<ServerState>>,
@@ -149,6 +155,7 @@ fn build_assignment_entries(
 }
 
 impl PolyfontLanguageServer {
+    /// Create a new language server instance with the given LSP client.
     #[must_use]
     pub fn new(client: Client) -> Self {
         Self {
@@ -157,6 +164,7 @@ impl PolyfontLanguageServer {
         }
     }
 
+    /// Build the LSP service with custom polyfont request handlers.
     pub fn build_service() -> (LspService<Self>, ClientSocket) {
         LspService::build(Self::new)
             .custom_method(

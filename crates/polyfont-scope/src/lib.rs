@@ -5,6 +5,7 @@ use polyfont_core::{FontAssignment, FontRule};
 #[cfg(test)]
 use polyfont_core::{FontSpec, FontStyle, FontWeight};
 
+/// Common TextMate scope names used in syntax highlighting.
 pub mod constants {
     pub const SCOPE_KEYWORD: &str = "keyword";
     pub const SCOPE_COMMENT: &str = "comment";
@@ -22,6 +23,7 @@ pub mod constants {
 
 pub use constants::*;
 
+/// A parsed TextMate scope pattern with support for wildcards and negation.
 #[derive(Debug, Clone)]
 pub struct ScopePattern {
     segments: Vec<PatternSegment>,
@@ -35,7 +37,11 @@ enum PatternSegment {
 }
 
 impl ScopePattern {
-    #[allow(clippy::missing_errors_doc)]
+    /// Parse a dot-separated scope pattern string. Supports `*` wildcards and `-` prefix for negation.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ScopeError::EmptyPattern`] if the pattern is empty or whitespace-only.
     pub fn parse(pattern: &str) -> Result<Self, ScopeError> {
         let trimmed = pattern.trim();
         if trimmed.is_empty() {
@@ -64,11 +70,13 @@ impl ScopePattern {
         Ok(Self { segments, negated })
     }
 
+    /// Check if this pattern matches the given scope.
     #[must_use]
     pub fn matches_scope(&self, scope: &str) -> bool {
         self.matches_raw(scope)
     }
 
+    /// Raw match without negation check. Returns true if the pattern segments match the scope prefix.
     #[must_use]
     pub fn matches_raw(&self, scope: &str) -> bool {
         let scope_parts: Vec<&str> = scope.split('.').collect();
@@ -90,6 +98,7 @@ impl ScopePattern {
         true
     }
 
+    /// Compute the specificity (number of literal, non-wildcard segments). Higher specificity means a more precise match.
     #[must_use]
     pub fn specificity(&self) -> usize {
         self.segments
@@ -100,12 +109,17 @@ impl ScopePattern {
 }
 
 #[derive(Debug, Clone)]
+/// A comma-separated collection of scope patterns, supporting both positive and negative (exclusion) patterns.
 pub struct ScopeSelector {
     patterns: Vec<ScopePattern>,
 }
 
 impl ScopeSelector {
-    #[allow(clippy::missing_errors_doc)]
+    /// Parse a comma-separated scope selector string. Supports `-` prefixed patterns for exclusion.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ScopeError::EmptyPattern`] if no valid patterns are found.
     pub fn parse(selector: &str) -> Result<Self, ScopeError> {
         let patterns = selector
             .split(',')
@@ -126,6 +140,7 @@ impl ScopeSelector {
         Ok(Self { patterns })
     }
 
+    /// Check if any positive pattern matches the scope, excluding any matched by negative patterns.
     #[must_use]
     pub fn matches(&self, scope: &str) -> bool {
         let positive_matches: Vec<&ScopePattern> =
@@ -147,6 +162,7 @@ impl ScopeSelector {
         positive_matches.iter().any(|p| p.matches_scope(scope))
     }
 
+    /// Return the maximum specificity among positive patterns.
     #[must_use]
     pub fn specificity(&self) -> usize {
         self.patterns
@@ -158,16 +174,25 @@ impl ScopeSelector {
     }
 }
 
+/// Convenience methods for one-shot scope matching without creating persistent objects.
 pub struct ScopeMatcher;
 
 impl ScopeMatcher {
-    #[allow(clippy::missing_errors_doc)]
+    /// Check if a scope matches a selector string. Convenience wrapper around [`ScopeSelector`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ScopeError`] if the selector string fails to parse.
     pub fn matches(scope: &str, selector: &str) -> Result<bool, ScopeError> {
         let sel = ScopeSelector::parse(selector)?;
         Ok(sel.matches(scope))
     }
 
-    #[allow(clippy::missing_errors_doc)]
+    /// Check if a scope matches any of the given selector strings.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ScopeError`] if any selector string fails to parse.
     pub fn matches_any(scope: &str, selectors: &[&str]) -> Result<bool, ScopeError> {
         for selector in selectors {
             let sel = ScopeSelector::parse(selector)?;
@@ -179,22 +204,28 @@ impl ScopeMatcher {
     }
 }
 
+/// Result of resolving a scope to its best-matching font rule.
 #[derive(Debug, Clone)]
 pub struct ResolvedScope {
+    /// The font assignment for this scope.
     pub assignment: FontAssignment,
+    /// Index of the matching rule in the original rule list.
     pub rule_index: usize,
 }
 
+/// Resolves TextMate scopes to font rules using specificity-based matching.
 pub struct ScopeResolver {
     rules: Vec<(FontRule, usize)>,
 }
 
 impl ScopeResolver {
+    /// Create an empty resolver with no rules.
     #[must_use]
     pub const fn new() -> Self {
         Self { rules: Vec::new() }
     }
 
+    /// Create a resolver pre-loaded with font rules.
     #[must_use]
     pub fn from_rules(rules: Vec<FontRule>) -> Self {
         let indexed: Vec<(FontRule, usize)> =
@@ -202,13 +233,18 @@ impl ScopeResolver {
         Self { rules: indexed }
     }
 
+    /// Add a font rule to the resolver.
     pub fn add_rule(&mut self, rule: FontRule) {
         let index = self.rules.len();
         self.rules.push((rule, index));
     }
 
+    /// Resolve a scope to its best-matching font rule. Uses highest specificity, with insertion order as tiebreaker.
+    ///
+    /// # Panics
+    ///
+    /// Cannot panic in practice; the `expect` is guarded by the `match` above it.
     #[must_use]
-    #[allow(clippy::missing_panics_doc)]
     pub fn resolve(&self, scope: &str) -> Option<ResolvedScope> {
         let mut best: Option<(&FontRule, usize, usize)> = None;
 
@@ -242,6 +278,7 @@ impl ScopeResolver {
         })
     }
 
+    /// Resolve multiple scopes in batch.
     pub fn resolve_all<'a, I>(&self, scopes: I) -> Vec<Option<ResolvedScope>>
     where
         I: IntoIterator<Item = &'a str>,
@@ -249,10 +286,12 @@ impl ScopeResolver {
         scopes.into_iter().map(|s| self.resolve(s)).collect()
     }
 
+    /// Remove all rules.
     pub fn clear(&mut self) {
         self.rules.clear();
     }
 
+    /// Return the number of registered rules.
     #[must_use]
     pub const fn rule_count(&self) -> usize {
         self.rules.len()
@@ -265,17 +304,20 @@ impl Default for ScopeResolver {
     }
 }
 
+/// A node in the scope prefix tree. Internal representation for [`ScopeTree`].
 #[derive(Debug, Clone, Default)]
 pub struct ScopeTreeNode {
     children: BTreeMap<String, Self>,
     is_terminal: bool,
 }
 
+/// A prefix tree (trie) for efficient scope storage and prefix queries.
 pub struct ScopeTree {
     root: ScopeTreeNode,
 }
 
 impl ScopeTree {
+    /// Create an empty scope tree.
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -283,6 +325,7 @@ impl ScopeTree {
         }
     }
 
+    /// Insert a dot-separated scope into the tree.
     pub fn insert(&mut self, scope: &str) {
         let mut node = &mut self.root;
         for segment in scope.split('.') {
@@ -291,6 +334,7 @@ impl ScopeTree {
         node.is_terminal = true;
     }
 
+    /// Check if an exact scope exists in the tree.
     #[must_use]
     pub fn contains(&self, scope: &str) -> bool {
         let mut node = &self.root;
@@ -303,6 +347,7 @@ impl ScopeTree {
         node.is_terminal
     }
 
+    /// Check if any scope in the tree starts with the given prefix.
     #[must_use]
     pub fn has_prefix(&self, prefix: &str) -> bool {
         let mut node = &self.root;
@@ -315,6 +360,7 @@ impl ScopeTree {
         true
     }
 
+    /// Return all scopes that start with the given prefix.
     #[must_use]
     pub fn query_prefix(&self, prefix: &str) -> Vec<String> {
         let mut node = &self.root;
@@ -330,11 +376,13 @@ impl ScopeTree {
         results
     }
 
+    /// Return the number of terminal (complete) scopes in the tree.
     #[must_use]
     pub fn len(&self) -> usize {
         count_terminals(&self.root)
     }
 
+    /// Return true if the tree contains no scopes.
     #[must_use]
     pub fn is_empty(&self) -> bool {
         !self.root.is_terminal && self.root.children.is_empty()
@@ -369,6 +417,7 @@ fn count_terminals(node: &ScopeTreeNode) -> usize {
     count
 }
 
+/// Trie-based scope resolver with O(k) lookup where k is the number of segments in the scope.
 pub struct TrieScopeResolver {
     root: TrieNode,
     rule_count: usize,
@@ -381,6 +430,7 @@ struct TrieNode {
 }
 
 impl TrieScopeResolver {
+    /// Create an empty trie resolver.
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -389,6 +439,7 @@ impl TrieScopeResolver {
         }
     }
 
+    /// Create a trie resolver pre-loaded with font rules.
     #[must_use]
     pub fn from_rules(rules: Vec<FontRule>) -> Self {
         let mut resolver = Self::new();
@@ -398,6 +449,7 @@ impl TrieScopeResolver {
         resolver
     }
 
+    /// Add a font rule to the trie.
     pub fn add_rule(&mut self, rule: FontRule) {
         let index = self.rule_count;
         let mut node = &mut self.root;
@@ -408,6 +460,11 @@ impl TrieScopeResolver {
         self.rule_count += 1;
     }
 
+    /// Resolve a scope using trie traversal. Falls back to wildcard (`*`) segments when no literal match exists.
+    ///
+    /// # Panics
+    ///
+    /// Cannot panic in practice; the `expect` is guarded by the `match` above it.
     #[must_use]
     pub fn resolve(&self, scope: &str) -> Option<ResolvedScope> {
         let mut node = &self.root;
@@ -451,10 +508,12 @@ impl TrieScopeResolver {
         })
     }
 
+    /// Resolve multiple scopes in batch.
     pub fn resolve_all(&self, scopes: &[&str]) -> Vec<Option<ResolvedScope>> {
         scopes.iter().map(|s| self.resolve(s)).collect()
     }
 
+    /// Return the number of registered rules.
     #[must_use]
     pub const fn rule_count(&self) -> usize {
         self.rule_count
@@ -467,10 +526,13 @@ impl Default for TrieScopeResolver {
     }
 }
 
+/// Errors that can occur during scope parsing and matching.
 #[derive(Debug, thiserror::Error)]
 pub enum ScopeError {
+    /// The scope pattern or selector is empty.
     #[error("empty scope pattern")]
     EmptyPattern,
+    /// The scope pattern contains invalid characters.
     #[error("invalid scope pattern: {0}")]
     InvalidPattern(String),
 }

@@ -1,21 +1,30 @@
 use polyfont_config::{DefaultFontConfig, FontConfig, PolyfontConfig, RuleConfig};
 use polyfont_core::{FontStyle, FontWeight};
 
+/// Metadata about a built-in theme.
 #[derive(Debug, Clone)]
 pub struct ThemeInfo {
+    /// Theme identifier.
     pub name: String,
+    /// Human-readable description.
     pub description: String,
 }
 
+/// Enumeration of built-in themes.
 pub struct BuiltinTheme {
+    /// Theme identifier.
     pub name: String,
+    /// Human-readable description.
     pub description: String,
+    /// The full theme configuration.
     pub config: PolyfontConfig,
 }
 
+/// Registry of available themes.
 pub struct ThemeRegistry;
 
 impl ThemeRegistry {
+    /// List all available built-in themes.
     pub fn list_themes(&self) -> Vec<ThemeInfo> {
         static CACHE: std::sync::OnceLock<Vec<ThemeInfo>> = std::sync::OnceLock::new();
         CACHE
@@ -31,6 +40,7 @@ impl ThemeRegistry {
             .clone()
     }
 
+    /// Look up a theme by name.
     pub fn get_theme(&self, name: &str) -> Option<&'static BuiltinTheme> {
         get_builtin_theme(name)
     }

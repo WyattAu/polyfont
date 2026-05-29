@@ -2,14 +2,25 @@ use polyfont_config::PolyfontConfig;
 
 use crate::ThemeError;
 
+/// Exports polyfont configurations to various theme formats.
 pub struct ThemeExporter;
 
 impl ThemeExporter {
+    /// Export a polyfont config as a TOML string with a header comment.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ThemeError::TomlSerialize`] if the config cannot be serialized.
     pub fn export_config(config: &PolyfontConfig) -> Result<String, ThemeError> {
         let toml_str = toml::to_string_pretty(config)?;
         Ok(format!("# polyfont config\n{toml_str}"))
     }
 
+    /// Export a polyfont config as a VSCode-compatible JSON structure.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ThemeError::Json`] if serialization fails.
     pub fn export_vscode(config: &PolyfontConfig) -> Result<String, ThemeError> {
         let mut entries = Vec::new();
 

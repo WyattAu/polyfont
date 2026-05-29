@@ -3,9 +3,16 @@ use polyfont_config::PolyfontConfig;
 use crate::ThemeError;
 use crate::mapping::{FontMapping, build_config_from_entries};
 
+/// Imports external theme formats into polyfont configurations.
 pub struct ThemeImporter;
 
 impl ThemeImporter {
+    /// Import a VSCode theme JSON string, mapping scopes to polyfont rules.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ThemeError::Json`] if the input is not valid JSON, or
+    /// [`ThemeError::Validation`] if the `tokenColors` array is missing.
     pub fn import_vscode_theme(
         &self,
         json: &str,
@@ -40,6 +47,11 @@ impl ThemeImporter {
         Ok(build_config_from_entries(entries, font_mapping))
     }
 
+    /// Import a TextMate `.tmTheme` XML string.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ThemeError::Validation`] if no scope entries can be extracted.
     pub fn import_textmate_theme(
         &self,
         xml: &str,

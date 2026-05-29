@@ -5,9 +5,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::ThemeError;
 
+/// Theme sharing and project-level persistence utilities.
 pub struct ThemeShare;
 
 impl ThemeShare {
+    /// Format a config as a shareable TOML string with a header comment.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ThemeError::TomlSerialize`] if the config cannot be serialized.
     pub fn format_gist_content(
         config: &PolyfontConfig,
         description: &str,
@@ -18,6 +24,13 @@ impl ThemeShare {
         ))
     }
 
+    /// Fetch a polyfont config from a remote URL. Requires the `download` feature.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ThemeError::DownloadDisabled`] if the `download` feature is not
+    /// enabled, [`ThemeError::Validation`] on HTTP failure, or
+    /// [`ThemeError::Toml`] if the response body is not valid TOML.
     pub fn fetch_from_url(url: &str) -> Result<PolyfontConfig, ThemeError> {
         #[cfg(feature = "download")]
         {
@@ -30,6 +43,12 @@ impl ThemeShare {
         }
     }
 
+    /// Save a config to a project's `.polyfont/themes/` directory.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ThemeError::Io`] if directory creation or writing fails, or
+    /// [`ThemeError::TomlSerialize`] if the config cannot be serialized.
     pub fn save_to_project(
         config: &PolyfontConfig,
         project_dir: &Path,
@@ -52,6 +71,7 @@ impl ThemeShare {
     }
 }
 
+/// An entry in the theme lockfile tracking remote themes.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThemeLockEntry {
     pub name: String,
@@ -60,6 +80,7 @@ pub struct ThemeLockEntry {
     pub applied_at: String,
 }
 
+/// Lockfile tracking applied remote themes.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThemeLockfile {
     pub themes: Vec<ThemeLockEntry>,
@@ -121,9 +142,11 @@ impl ThemeShare {
     }
 }
 
+/// Discovers theme files in project directories.
 pub struct ThemeDiscovery;
 
 impl ThemeDiscovery {
+    /// Find all `.toml` theme files in a project's `.polyfont/themes/` directory.
     pub fn discover_in_project(project_dir: &Path) -> Vec<PathBuf> {
         let themes_dir = project_dir.join(".polyfont").join("themes");
         if !themes_dir.is_dir() {
@@ -143,12 +166,13 @@ impl ThemeDiscovery {
         results
     }
 
+    /// List themes from a lockfile.
     pub fn discover_remote(lockfile: &ThemeLockfile) -> Vec<ThemeLockEntry> {
         lockfile.themes.clone()
     }
 }
 
-/// A remote theme registry entry.
+/// An entry in the remote theme registry.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RemoteThemeEntry {
     pub name: String,
@@ -162,7 +186,7 @@ pub struct RemoteThemeEntry {
     pub description: String,
 }
 
-/// A remote theme registry index.
+/// A registry of remotely available themes.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RemoteThemeRegistry {
     pub themes: Vec<RemoteThemeEntry>,

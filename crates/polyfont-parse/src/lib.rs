@@ -4,12 +4,16 @@ use polyfont_core::{Position, Range, TokenInfo};
 use thiserror::Error;
 use tracing::warn;
 
+/// Character offset encoding used by LSP clients.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OffsetEncoding {
+    /// Byte offsets (0-based).
     Utf8,
+    /// UTF-16 code unit offsets (0-based), used by VSCode.
     Utf16,
 }
 
+/// Errors that can occur during token parsing.
 #[derive(Debug, Error)]
 pub enum ParseError {
     #[error("unsupported language: {0}")]
@@ -18,6 +22,7 @@ pub enum ParseError {
     ParseFailed { language: String, message: String },
 }
 
+/// Trait for language-specific tokenization support.
 pub trait LanguageSupport: Send + Sync {
     fn language_name(&self) -> &str;
     fn language_id(&self) -> &str;
@@ -28,6 +33,7 @@ pub trait LanguageSupport: Send + Sync {
     ) -> Result<Vec<TokenInfo>, ParseError>;
 }
 
+/// Convert a byte offset in a text document to a line/column position.
 pub fn byte_offset_to_position(
     text: &str,
     byte_offset: usize,
@@ -76,6 +82,7 @@ fn byte_offset_to_position_safe(
     }
 }
 
+/// Derive a TextMate scope string from tree-sitter highlight capture names.
 pub fn scope_from_highlights(highlight_names: &[&str]) -> String {
     highlight_names.join(".")
 }
@@ -235,11 +242,13 @@ macro_rules! register_language {
     };
 }
 
+/// Multi-language token parser using tree-sitter grammars when available, with naive fallback.
 pub struct TokenParser {
     languages: HashMap<String, Box<dyn LanguageSupport>>,
 }
 
 impl TokenParser {
+    /// Create a new token parser.
     pub fn new() -> Self {
         #[allow(unused_mut)]
         let mut languages: HashMap<String, Box<dyn LanguageSupport>> = HashMap::new();
@@ -357,12 +366,14 @@ impl TokenParser {
         Self { languages }
     }
 
+    /// Return a list of supported language identifiers.
     pub fn supported_languages(&self) -> Vec<&str> {
         let mut langs: Vec<&str> = self.languages.keys().map(String::as_str).collect();
         langs.sort();
         langs
     }
 
+    /// Parse tokens from source text for the given language.
     pub fn parse_tokens(
         &self,
         text: &str,

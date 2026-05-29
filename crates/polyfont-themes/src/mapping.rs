@@ -6,9 +6,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::ThemeError;
 
+/// Maps TextMate scope categories to default font specifications.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FontMapping {
+    /// Scope-to-font-family mappings.
     pub scope_fonts: HashMap<String, String>,
+    /// Font family used when no scope matches.
     pub default_family: Option<String>,
 }
 
@@ -19,6 +22,7 @@ impl Default for FontMapping {
 }
 
 impl FontMapping {
+    /// Return the built-in default font mapping.
     #[must_use]
     pub fn default_mapping() -> Self {
         let mut scope_fonts = HashMap::new();
@@ -44,6 +48,12 @@ impl FontMapping {
         }
     }
 
+    /// Parse a font mapping from a TOML string.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ThemeError::Toml`] if the input is not valid TOML or does not
+    /// match the expected schema.
     pub fn from_toml(toml: &str) -> Result<Self, ThemeError> {
         let mapping: Self = toml::from_str(toml)?;
         Ok(mapping)
@@ -87,6 +97,7 @@ fn parse_font_style(style_str: &str) -> (FontWeight, FontStyle) {
     (weight, style)
 }
 
+/// Build a [`PolyfontConfig`] from theme import entries and a font mapping.
 pub fn build_config_from_entries(
     entries: Vec<(String, String)>,
     mapping: &FontMapping,
