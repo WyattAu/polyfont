@@ -15,8 +15,16 @@ impl ThemeShare {
         ))
     }
 
-    pub fn fetch_from_url(_url: &str) -> Result<PolyfontConfig, ThemeError> {
-        Err(ThemeError::DownloadDisabled)
+    pub fn fetch_from_url(url: &str) -> Result<PolyfontConfig, ThemeError> {
+        #[cfg(feature = "download")]
+        {
+            Self::fetch_from_url_impl(url)
+        }
+        #[cfg(not(feature = "download"))]
+        {
+            let _ = url;
+            Err(ThemeError::DownloadDisabled)
+        }
     }
 
     pub fn save_to_project(
@@ -82,6 +90,32 @@ fn chrono_now_or_empty() -> String {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs().to_string())
         .unwrap_or_default()
+}
+
+#[cfg(feature = "download")]
+impl ThemeShare {
+    fn fetch_from_url_impl(url: &str) -> Result<PolyfontConfig, ThemeError> {
+        let response = reqwest::blocking::Client::new()
+            .get(url)
+            .send()
+            .map_err(|e| ThemeError::Io(std::io::Error::other(e.to_string())))?;
+
+        if !response.status().is_success() {
+            return Err(ThemeError::Validation(format!(
+                "failed to fetch theme from {url}: HTTP {}",
+                response.status()
+            )));
+        }
+
+        let content = response.text().map_err(|e| {
+            ThemeError::Io(std::io::Error::other(format!(
+                "failed to read response: {e}"
+            )))
+        })?;
+
+        let config: PolyfontConfig = toml::from_str(&content)?;
+        Ok(config)
+    }
 }
 
 pub struct ThemeDiscovery;

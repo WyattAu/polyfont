@@ -9,6 +9,10 @@ keywords = ["font", "theme", "syntax-highlighting", "textmate"]
 categories = ["text-editors", "development-tools"]
 description = "Theme import, export, and registry for polyfont"
 
+[features]
+default = []
+download = ["reqwest"]
+
 [dependencies]
 polyfont-core = { workspace = true }
 polyfont-config = { workspace = true }
@@ -17,3 +21,8 @@ serde_json = { workspace = true }
 toml = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+
+[dependencies.reqwest]
+version = "0.12"
+features = ["rustls-tls", "blocking"]
+optional = true
