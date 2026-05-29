@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { parsePolyfontConfig, validateConfig } from "./configParser.ts";
+import { parsePolyfontConfig, validateConfig } from "./configParser";
 
 describe("parsePolyfontConfig", () => {
   it("parses minimal valid config", () => {
