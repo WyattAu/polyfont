@@ -680,3 +680,251 @@ impl LanguageServer for PolyfontLanguageServer {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use polyfont_core::{FontRule, FontSpec, Position, Range, ScopeMatchEngine, TokenInfo};
+    use polyfont_core::{FontStyle, FontWeight};
+
+    #[test]
+    fn test_language_id_rust() {
+        assert_eq!(
+            language_id_from_uri("file:///home/user/src/main.rs"),
+            "rust"
+        );
+        assert_eq!(language_id_from_uri("main.rs"), "rust");
+    }
+
+    #[test]
+    fn test_language_id_typescript() {
+        assert_eq!(language_id_from_uri("app.tsx"), "typescript");
+        assert_eq!(language_id_from_uri("app.ts"), "typescript");
+    }
+
+    #[test]
+    fn test_language_id_javascript() {
+        assert_eq!(language_id_from_uri("app.jsx"), "javascript");
+        assert_eq!(language_id_from_uri("app.js"), "javascript");
+    }
+
+    #[test]
+    fn test_language_id_python() {
+        assert_eq!(language_id_from_uri("script.py"), "python");
+    }
+
+    #[test]
+    fn test_language_id_go() {
+        assert_eq!(language_id_from_uri("main.go"), "go");
+    }
+
+    #[test]
+    fn test_language_id_c_cpp() {
+        assert_eq!(language_id_from_uri("main.c"), "c");
+        assert_eq!(language_id_from_uri("main.cpp"), "cpp");
+        assert_eq!(language_id_from_uri("header.hpp"), "cpp");
+        assert_eq!(language_id_from_uri("header.h"), "cpp");
+    }
+
+    #[test]
+    fn test_language_id_config() {
+        assert_eq!(language_id_from_uri("Cargo.toml"), "toml");
+        assert_eq!(language_id_from_uri("data.json"), "json");
+    }
+
+    #[test]
+    fn test_language_id_lua() {
+        assert_eq!(language_id_from_uri("init.lua"), "lua");
+    }
+
+    #[test]
+    fn test_language_id_unknown() {
+        assert_eq!(language_id_from_uri("readme"), "unknown");
+        assert_eq!(language_id_from_uri("file.xyz"), "unknown");
+    }
+
+    #[test]
+    fn test_classify_comment() {
+        assert_eq!(classify_line("// hello"), "comment");
+        assert_eq!(classify_line("/// doc comment"), "comment");
+        assert_eq!(classify_line("# comment"), "comment");
+    }
+
+    #[test]
+    fn test_classify_string() {
+        assert_eq!(classify_line("\"hello\""), "string");
+        assert_eq!(classify_line("'c'"), "string");
+        assert_eq!(classify_line("`template`"), "string");
+    }
+
+    #[test]
+    fn test_classify_function() {
+        assert_eq!(classify_line("fn main()"), "entity.name.function");
+        assert_eq!(classify_line("function foo()"), "entity.name.function");
+        assert_eq!(classify_line("def bar()"), "entity.name.function");
+        assert_eq!(classify_line("pub fn baz()"), "entity.name.function");
+        assert_eq!(classify_line("async fn qux()"), "entity.name.function");
+    }
+
+    #[test]
+    fn test_classify_variable() {
+        assert_eq!(classify_line("let x = 1"), "variable");
+        assert_eq!(classify_line("const Y = 2"), "variable");
+        assert_eq!(classify_line("var z = 3"), "variable");
+        assert_eq!(classify_line("let mut a = 4"), "variable");
+    }
+
+    #[test]
+    fn test_classify_type() {
+        assert_eq!(classify_line("struct Foo"), "entity.name.type");
+        assert_eq!(classify_line("enum Bar"), "entity.name.type");
+        assert_eq!(classify_line("class Baz"), "entity.name.type");
+        assert_eq!(classify_line("interface Qux"), "entity.name.type");
+        assert_eq!(classify_line("type Alias = i32"), "entity.name.type");
+        assert_eq!(classify_line("impl Display"), "entity.name.type");
+        assert_eq!(classify_line("trait Clone"), "entity.name.type");
+    }
+
+    #[test]
+    fn test_classify_keyword() {
+        assert_eq!(classify_line("use std::io"), "keyword");
+        assert_eq!(classify_line("import foo"), "keyword");
+        assert_eq!(classify_line("from bar import baz"), "keyword");
+        assert_eq!(classify_line("mod tests"), "keyword");
+    }
+
+    #[test]
+    fn test_classify_control_flow() {
+        assert_eq!(classify_line("if x > 0"), "keyword.control");
+        assert_eq!(classify_line("else"), "keyword.control");
+        assert_eq!(classify_line("for i in 0..10"), "keyword.control");
+        assert_eq!(classify_line("while true"), "keyword.control");
+        assert_eq!(classify_line("return"), "keyword.control");
+        assert_eq!(classify_line("break"), "keyword.control");
+        assert_eq!(classify_line("continue"), "keyword.control");
+    }
+
+    #[test]
+    fn test_classify_source_fallback() {
+        assert_eq!(classify_line("x + y"), "source");
+        assert_eq!(classify_line("println!(\"hello\")"), "source");
+    }
+
+    #[test]
+    fn test_tokenize_naive_empty() {
+        let tokens = tokenize_document_naive("");
+        assert!(tokens.is_empty());
+    }
+
+    #[test]
+    fn test_tokenize_naive_blank_lines() {
+        let tokens = tokenize_document_naive("\n\n  \n");
+        assert!(tokens.is_empty());
+    }
+
+    #[test]
+    fn test_tokenize_naive_single_line() {
+        let tokens = tokenize_document_naive("fn main()");
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].scope, "entity.name.function");
+        assert_eq!(tokens[0].range.start.line, 0);
+        assert_eq!(tokens[0].range.start.column, 0);
+    }
+
+    #[test]
+    fn test_tokenize_naive_multiline() {
+        let code = "fn foo()\nlet x = 1\n// comment\n";
+        let tokens = tokenize_document_naive(code);
+        assert_eq!(tokens.len(), 3);
+        assert_eq!(tokens[0].scope, "entity.name.function");
+        assert_eq!(tokens[1].scope, "variable");
+        assert_eq!(tokens[2].scope, "comment");
+        assert_eq!(tokens[0].range.start.line, 0);
+        assert_eq!(tokens[1].range.start.line, 1);
+        assert_eq!(tokens[2].range.start.line, 2);
+    }
+
+    #[test]
+    fn test_tokenize_naive_indentation_preserved() {
+        let tokens = tokenize_document_naive("    let x = 1");
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].range.start.column, 4);
+        assert_eq!(tokens[0].text, "let x = 1");
+    }
+
+    #[test]
+    fn test_font_info_from_spec() {
+        let spec = FontSpec {
+            family: "Fira Code".to_string(),
+            fallbacks: vec!["monospace".to_string()],
+            weight: FontWeight::Bold,
+            style: FontStyle::Italic,
+            size: None,
+            axes: vec![],
+        };
+        let info = FontInfo::from(&spec);
+        assert_eq!(info.family, "Fira Code");
+        assert_eq!(info.fallbacks, vec!["monospace"]);
+        assert_eq!(info.weight, "bold");
+        assert_eq!(info.style, "italic");
+    }
+
+    #[test]
+    fn test_server_state_new() {
+        let state = ServerState::new();
+        assert!(state.engine.is_none());
+        assert!(state.config.is_none());
+        assert!(state.workspace_root.is_none());
+        assert!(state.documents.is_empty());
+    }
+
+    #[test]
+    fn test_build_assignment_entries_matching() {
+        let engine = ScopeMatchEngine::from_rules(vec![FontRule {
+            scope: "keyword".to_string(),
+            font: FontSpec::default_font("Maple Mono"),
+        }]);
+        let tokens = vec![TokenInfo {
+            text: "fn".to_string(),
+            range: Range {
+                start: Position { line: 0, column: 0 },
+                end: Position { line: 0, column: 2 },
+            },
+            scope: "keyword".to_string(),
+            modifiers: vec![],
+        }];
+        let entries = build_assignment_entries(&engine, &tokens);
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].font.family, "Maple Mono");
+        assert_eq!(entries[0].scope, "keyword");
+        assert_eq!(entries[0].range.start.line, 0);
+        assert_eq!(entries[0].range.start.character, 0);
+    }
+
+    #[test]
+    fn test_build_assignment_entries_no_match() {
+        let engine = ScopeMatchEngine::from_rules(vec![]);
+        let tokens = vec![TokenInfo {
+            text: "x".to_string(),
+            range: Range {
+                start: Position { line: 0, column: 0 },
+                end: Position { line: 0, column: 1 },
+            },
+            scope: "variable".to_string(),
+            modifiers: vec![],
+        }];
+        let entries = build_assignment_entries(&engine, &tokens);
+        assert!(entries.is_empty());
+    }
+
+    #[test]
+    fn test_font_pairings_not_empty() {
+        assert!(!FONT_PAIRINGS.is_empty());
+        for (scope, family, reason, category) in FONT_PAIRINGS {
+            assert!(!scope.is_empty(), "scope should not be empty");
+            assert!(!family.is_empty(), "family should not be empty");
+            assert!(!reason.is_empty(), "reason should not be empty");
+            assert!(!category.is_empty(), "category should not be empty");
+        }
+    }
+}
