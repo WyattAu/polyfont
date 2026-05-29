@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
+/// CSS-like font weight values, from thin (100) to black (900).
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum FontWeight {
@@ -33,6 +34,7 @@ impl std::fmt::Display for FontWeight {
     }
 }
 
+/// Font style variants: normal, italic, or oblique.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum FontStyle {
@@ -122,6 +124,8 @@ impl AxisValue {
     }
 }
 
+/// Complete specification of a font family with weight, style, fallbacks, and
+/// variable-font axes.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FontSpec {
     pub family: String,
@@ -139,6 +143,7 @@ pub struct FontSpec {
 }
 
 impl FontSpec {
+    /// Create a [`FontSpec`] with regular weight and normal style.
     #[must_use]
     pub fn default_font(family: &str) -> Self {
         Self {
@@ -171,6 +176,7 @@ impl FontSpec {
     }
 }
 
+/// Maps a TextMate scope pattern to a [`FontSpec`].
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FontRule {
     pub scope: String,
@@ -178,12 +184,17 @@ pub struct FontRule {
 }
 
 impl FontRule {
+    /// Compute the specificity of this rule's scope pattern.
+    ///
+    /// Equal to the number of dot-separated segments in [`scope`](FontRule::scope).
+    /// Higher values indicate more specific patterns.
     #[must_use]
     pub fn specificity(&self) -> usize {
         self.scope.split('.').count()
     }
 }
 
+/// Result of resolving a token's scope to a specific font.
 #[derive(Debug, Clone)]
 pub struct FontAssignment {
     pub scope: String,

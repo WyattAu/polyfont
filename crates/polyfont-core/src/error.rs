@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+/// Errors that can occur during scope matching and font resolution.
 #[derive(Error, Debug)]
 pub enum PolyfontError {
     #[error("Configuration error: {0}")]

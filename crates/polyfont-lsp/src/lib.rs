@@ -222,22 +222,6 @@ impl PolyfontLanguageServer {
             .await;
     }
 
-    /// Tokenize and cache results for a document, returning the token list.
-    /// On subsequent calls for the same URI, performs incremental re-parsing
-    /// by only re-tokenizing if the document has changed.
-    #[allow(dead_code)]
-    async fn tokenize_and_cache(&self, uri: &str) -> Vec<TokenInfo> {
-        let state = self.state.read().await;
-        let Some(doc) = state.documents.get(uri) else {
-            return vec![];
-        };
-        // If we have cached tokens and the text hasn't changed, reuse them.
-        if !doc.cached_tokens.is_empty() {
-            return doc.cached_tokens.clone();
-        }
-        tokenize_document(&doc.text, uri)
-    }
-
     async fn serve_request_font_assignments(
         &self,
         params: FontAssignmentsRequestParams,

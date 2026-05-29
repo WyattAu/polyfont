@@ -1,29 +1,50 @@
 use crate::{FontAssignment, FontRule, TokenInfo};
 
+/// Core trait for scope-to-font resolution engines.
+///
+/// Implementations map [`TokenInfo`] scopes to [`FontAssignment`] values using
+/// an ordered set of [`FontRule`]s. Rules are sorted by specificity so that
+/// more specific scope patterns take priority.
 pub trait PolyfontEngine: Send + Sync {
+    /// Add a [`FontRule`] and re-sort by specificity.
     fn add_rule(&mut self, rule: FontRule);
 
+    /// Remove all rules whose scope exactly matches `scope`.
     fn remove_rule(&mut self, scope: &str);
 
+    /// Returns the current rules in specificity order (most specific first).
     fn rules(&self) -> &[FontRule];
 
+    /// Resolve a single token to a [`FontAssignment`].
+    ///
+    /// Returns `None` when no rule's scope pattern matches the token.
     fn resolve_token(&self, token: &TokenInfo) -> Option<FontAssignment>;
 
+    /// Resolve each token in `tokens` independently.
+    ///
+    /// See [`resolve_token`](PolyfontEngine::resolve_token).
     fn resolve_all(&self, tokens: &[TokenInfo]) -> Vec<Option<FontAssignment>>;
 
+    /// Remove all rules, leaving the engine empty.
     fn clear(&mut self);
 }
 
+/// Scope matching engine that resolves TextMate scopes to font assignments.
+///
+/// Rules are kept sorted in descending [`FontRule::specificity`] order so that
+/// the first matching rule during resolution is always the most specific one.
 pub struct ScopeMatchEngine {
     rules: Vec<FontRule>,
 }
 
 impl ScopeMatchEngine {
+    /// Create an empty engine with no rules.
     #[must_use]
     pub const fn new() -> Self {
         Self { rules: Vec::new() }
     }
 
+    /// Create an engine pre-loaded with `rules`, sorted by specificity.
     #[must_use]
     pub fn from_rules(rules: Vec<FontRule>) -> Self {
         let mut engine = Self { rules };
@@ -36,6 +57,11 @@ impl ScopeMatchEngine {
             .sort_by_key(|b| std::cmp::Reverse(b.specificity()));
     }
 
+    /// Check if `scope` matches `pattern`.
+    ///
+    /// A `"*"` pattern matches any scope. Otherwise the pattern matches when it
+    /// is either identical to `scope` or is a prefix followed by a `.` separator
+    /// (i.e. hierarchical TextMate scope matching).
     #[must_use]
     pub fn scope_matches(scope: &str, pattern: &str) -> bool {
         if pattern == "*" {

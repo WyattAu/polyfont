@@ -5,6 +5,7 @@ use tracing::{debug, warn};
 
 pub mod download;
 
+/// Errors that can occur during font discovery and download.
 #[derive(Debug, Error)]
 pub enum FontError {
     #[error("font command failed: {0}")]
@@ -19,8 +20,10 @@ pub enum FontError {
     Lockfile(String),
 }
 
+/// Specialized result type for font operations.
 pub type Result<T> = std::result::Result<T, FontError>;
 
+/// Platform-specific interface for discovering system fonts.
 pub trait FontDiscovery: Send + Sync {
     fn list_families(&self) -> Result<Vec<String>>;
     fn find_family(&self, name: &str) -> Result<bool>;
@@ -349,6 +352,7 @@ impl Default for FallbackDiscovery {
     }
 }
 
+/// Create the appropriate font discovery backend for the current platform.
 pub fn create_discovery() -> Box<dyn FontDiscovery> {
     if cfg!(target_os = "linux") {
         Box::new(FcListDiscovery)
@@ -361,6 +365,7 @@ pub fn create_discovery() -> Box<dyn FontDiscovery> {
     }
 }
 
+/// Result of checking font availability against a list of families.
 #[derive(Debug, Clone)]
 pub struct FontCheckResult {
     pub available: Vec<String>,
@@ -373,6 +378,7 @@ impl FontCheckResult {
     }
 }
 
+/// High-level font availability checker wrapping a [`FontDiscovery`] backend.
 pub struct FontScanner {
     discovery: Box<dyn FontDiscovery>,
 }

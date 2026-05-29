@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use crate::{FontError, Result};
 
 #[derive(Debug, Clone)]
+/// Source location for downloadable fonts.
 pub enum FontSource {
     GitHub { repo: String, tag: Option<String> },
     GoogleFonts,
@@ -10,6 +11,7 @@ pub enum FontSource {
 }
 
 #[derive(Debug, Clone)]
+/// Metadata about a known downloadable font.
 pub struct FontSourceInfo {
     pub name: String,
     pub source: FontSource,
@@ -84,7 +86,7 @@ static KNOWN_FONTS: std::sync::LazyLock<Vec<FontSourceInfo>> = std::sync::LazyLo
     ]
 });
 
-#[allow(dead_code)]
+/// Downloads and caches font files from remote sources.
 pub struct FontDownloader {
     cache_dir: PathBuf,
     lock_path: PathBuf,

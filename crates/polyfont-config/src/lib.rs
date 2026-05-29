@@ -9,6 +9,7 @@ use walkdir::WalkDir;
 const CONFIG_FILENAME: &str = ".polyfont.toml";
 const CURRENT_CONFIG_VERSION: u32 = 1;
 
+/// Top-level polyfont configuration loaded from `.polyfont.toml`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PolyfontConfig {
     pub version: u32,
@@ -18,6 +19,7 @@ pub struct PolyfontConfig {
     pub rules: Vec<RuleConfig>,
 }
 
+/// Default font specification applied when no scope-specific rule matches.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefaultFontConfig {
     pub family: String,
@@ -33,12 +35,14 @@ pub struct DefaultFontConfig {
     pub axes: Vec<AxisValue>,
 }
 
+/// A single scope-to-font mapping rule.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RuleConfig {
     pub scope: String,
     pub font: FontConfig,
 }
 
+/// Font configuration within a rule (family, weight, style, fallbacks).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FontConfig {
     pub family: String,
@@ -55,7 +59,13 @@ pub struct FontConfig {
 }
 
 impl PolyfontConfig {
-    #[allow(clippy::missing_errors_doc)]
+    /// Validate this configuration for completeness and correctness.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ConfigError::UnsupportedVersion`] if `version` is not the
+    /// current version. Returns [`ConfigError::Validation`] if any font family
+    /// or scope is empty.
     pub fn validate(&self) -> Result<(), ConfigError> {
         if self.version != CURRENT_CONFIG_VERSION {
             return Err(ConfigError::UnsupportedVersion {
@@ -89,6 +99,7 @@ impl PolyfontConfig {
         Ok(())
     }
 
+    /// Convert config into a flat list of [`FontRule`]s, including a default catchall.
     #[must_use]
     pub fn to_rules(&self) -> Vec<FontRule> {
         let mut rules: Vec<FontRule> = self
@@ -124,6 +135,8 @@ impl PolyfontConfig {
         rules
     }
 
+    /// Overlay another config on top of this one. The overlay takes precedence
+    /// for matching keys.
     #[must_use]
     pub fn merge(base: Self, overlay: Self) -> Self {
         let rules = overlay.rules;
@@ -136,6 +149,7 @@ impl PolyfontConfig {
     }
 }
 
+/// Errors that can occur during configuration loading or validation.
 #[derive(Debug, Error)]
 pub enum ConfigError {
     #[error("unsupported config version: found {found}, expected {expected}")]
@@ -154,10 +168,17 @@ pub enum ConfigError {
     NotFound(PathBuf),
 }
 
+/// Filesystem-based configuration loader with ancestor directory search.
 pub struct ConfigLoader;
 
 impl ConfigLoader {
-    #[allow(clippy::missing_errors_doc)]
+    /// Load config from a specific file path.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ConfigError::Io`] if the file cannot be read,
+    /// [`ConfigError::Parse`] if the TOML is invalid, or any error from
+    /// [`PolyfontConfig::validate`].
     pub fn load_from_path(path: &Path) -> Result<PolyfontConfig, ConfigError> {
         info!("loading config from {}", path.display());
         let content = std::fs::read_to_string(path)?;
@@ -166,13 +187,25 @@ impl ConfigLoader {
         Ok(config)
     }
 
-    #[allow(clippy::missing_errors_doc)]
+    /// Load config by searching for `.polyfont.toml` in the given directory and
+    /// its ancestors.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ConfigError::NotFound`] if no config file is found, or any
+    /// error from [`load_from_path`](Self::load_from_path).
     pub fn load_from_dir(start_dir: &Path) -> Result<PolyfontConfig, ConfigError> {
         let config_path = Self::find_config(start_dir)
             .ok_or_else(|| ConfigError::NotFound(start_dir.to_path_buf()))?;
         Self::load_from_path(&config_path)
     }
 
+    /// Locate the `.polyfont.toml` file by walking up from the given directory.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if no config file is found or the start directory cannot
+    /// be canonicalized.
     pub fn find_config(start_dir: &Path) -> Option<PathBuf> {
         let canonical = start_dir.canonicalize().ok()?;
         let mut current = canonical.as_path();
@@ -198,8 +231,17 @@ impl ConfigLoader {
         }
     }
 
-    #[allow(clippy::missing_errors_doc)]
-    #[allow(clippy::missing_panics_doc)]
+    /// Load the primary config and merge with any overlay configs.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ConfigError::NotFound`] if no config files are found, or any
+    /// error from [`load_from_path`](Self::load_from_path) on the primary config.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the non-empty config list is somehow empty after the check
+    /// (should never happen).
     pub fn load_merged(start_dir: &Path) -> Result<PolyfontConfig, ConfigError> {
         let configs = Self::find_all_configs(start_dir);
         if configs.is_empty() {
