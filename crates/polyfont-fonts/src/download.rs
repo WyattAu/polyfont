@@ -66,6 +66,21 @@ static KNOWN_FONTS: std::sync::LazyLock<Vec<FontSourceInfo>> = std::sync::LazyLo
             },
             license: "OFL-1.1".to_string(),
         },
+        FontSourceInfo {
+            name: "Source Serif Pro".to_string(),
+            source: FontSource::GoogleFonts,
+            license: "OFL-1.1".to_string(),
+        },
+        FontSourceInfo {
+            name: "Source Serif 4".to_string(),
+            source: FontSource::GoogleFonts,
+            license: "OFL-1.1".to_string(),
+        },
+        FontSourceInfo {
+            name: "Roboto Mono".to_string(),
+            source: FontSource::GoogleFonts,
+            license: "Apache-2.0".to_string(),
+        },
     ]
 });
 
@@ -248,9 +263,8 @@ impl FontDownloader {
                 format!("https://github.com/{repo}/releases/download/{tag}/{slug}.zip")
             }
             FontSource::GoogleFonts => {
-                return Err(FontError::DiscoveryFailed(
-                    "Google Fonts download is not yet supported".to_string(),
-                ));
+                let encoded: String = family.replace(' ', "+");
+                format!("https://fonts.google.com/download?family={encoded}")
             }
         };
 
@@ -410,6 +424,30 @@ downloaded_at = "1700000000"
             entry["path"].as_str(),
             Some("/home/user/.cache/polyfont/fonts/JetBrainsMono-Regular.ttf")
         );
+    }
+
+    #[test]
+    fn test_google_fonts_url_construction() {
+        let sources = FontDownloader::list_available_sources();
+        let google_fonts: Vec<_> = sources
+            .iter()
+            .filter(|s| matches!(s.source, FontSource::GoogleFonts))
+            .collect();
+        assert!(
+            !google_fonts.is_empty(),
+            "should have at least one Google Fonts entry"
+        );
+
+        for gf in &google_fonts {
+            if let FontSource::GoogleFonts = gf.source {
+                let encoded = gf.name.replace(' ', "+");
+                let url = format!("https://fonts.google.com/download?family={encoded}");
+                assert!(
+                    url.contains(&gf.name.replace(' ', "+")),
+                    "URL should contain encoded family name"
+                );
+            }
+        }
     }
 
     #[test]
