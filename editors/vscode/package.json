@@ -39,12 +39,14 @@
   "scripts": {
     "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
     "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
-    "package": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify"
+    "package": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify",
+    "test": "node --import tsx --test src/configParser.test.ts"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/vscode": "^1.97.0",
     "esbuild": "^0.24.0",
+    "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   }
 }
