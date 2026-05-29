@@ -1,8 +1,6 @@
 //! Custom multi-font rendering engine for polyfont.
 //!
 //! Composites text from multiple font families into a single output.
-//! Supports GPU-accelerated rendering via `wgpu`/`glyphon`/`cosmic-text`
-//! or software rendering via `tiny-skia`/`softbuffer`.
 //!
 //! # Features
 //!
@@ -11,7 +9,9 @@
 //!
 //! # Status
 //!
-//! This is a skeleton crate. The rendering pipeline is under development.
+//! This is a skeleton crate. Both `gpu` and `software` features are
+//! placeholder feature flags; no rendering backends are wired yet.
+//! The rendering pipeline is under development (see ROADMAP_v2.md).
 
 use std::collections::HashSet;
 
