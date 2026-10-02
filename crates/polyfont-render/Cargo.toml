@@ -25,3 +25,6 @@ tiny-skia = { version = "0.11", optional = true }
 [dev-dependencies]
 polyfont-scope.workspace = true
 tempfile = "3"
+
+[package.metadata.layers]
+tier = "L1"

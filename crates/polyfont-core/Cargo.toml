@@ -25,3 +25,6 @@ dhat = ["dep:dhat"]
 [[bench]]
 name = "scope_matching"
 harness = false
+
+[package.metadata.layers]
+tier = "L0"

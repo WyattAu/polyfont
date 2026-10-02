@@ -27,3 +27,6 @@ tracing = { workspace = true }
 version = "0.12"
 features = ["rustls-tls", "blocking"]
 optional = true
+
+[package.metadata.layers]
+tier = "L1"

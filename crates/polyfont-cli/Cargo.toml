@@ -30,3 +30,6 @@ anyhow = { workspace = true }
 [features]
 default = []
 download = ["polyfont-fonts/download"]
+
+[package.metadata.layers]
+tier = "L3"

@@ -31,3 +31,6 @@ optional = true
 [dependencies.zip]
 version = "2"
 optional = true
+
+[package.metadata.layers]
+tier = "L0"

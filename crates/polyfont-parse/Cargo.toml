@@ -74,3 +74,6 @@ polyfont-scope = { workspace = true }
 [[bench]]
 name = "tokenization"
 harness = false
+
+[package.metadata.layers]
+tier = "L1"
