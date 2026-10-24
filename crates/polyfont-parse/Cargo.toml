@@ -8,7 +8,7 @@ documentation.workspace = true
 readme = "README.md"
 keywords = ["tree-sitter", "tokenization", "parsing", "syntax-highlighting"]
 categories = ["parser-implementations", "text-processing"]
-description = "Tree-sitter-based tokenization for polyfont"
+description = "Tree-sitter-based token parsing for polyfont"
 
 [dependencies]
 polyfont-core = { workspace = true }
@@ -31,7 +31,7 @@ toml = ["dep:tree-sitter-toml"]
 lua = ["dep:tree-sitter-lua"]
 
 [dependencies.tree-sitter-rust]
-version = "0.23"
+version = "0.10.0"
 optional = true
 
 [dependencies.tree-sitter-typescript]
