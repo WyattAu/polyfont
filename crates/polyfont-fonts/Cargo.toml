@@ -20,7 +20,7 @@ tracing = { workspace = true }
 toml = "0.8"
 
 [dependencies.reqwest]
-version = "0.12"
+version = "0.10.0"
 features = ["rustls-tls", "blocking"]
 optional = true
 
