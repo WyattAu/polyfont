@@ -8,7 +8,7 @@ readme = "README.md"
 documentation.workspace = true
 keywords = ["theme", "font", "syntax-highlighting", "import", "export"]
 categories = ["text-processing"]
-description = "Theme import, export, and built-in registry for polyfont"
+description = "Theme import, export, and registry for polyfont"
 
 [features]
 default = []
@@ -24,7 +24,7 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 
 [dependencies.reqwest]
-version = "0.12"
+version = "0.10.0"
 features = ["rustls-tls", "blocking"]
 optional = true
 
